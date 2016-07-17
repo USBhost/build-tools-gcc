@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# sudo apt install libc6-dev:amd64 texinfo git flex gawk
 # http://preshing.com/20141119/how-to-build-a-gcc-cross-compiler/ # credits for almost everything
 # http://www.mpfr.org/
 # https://gmplib.org/
@@ -11,6 +10,11 @@
 # https://www.gnu.org/software/libc/
 # https://www.kernel.org/
 # https://git.linaro.org/toolchain/gcc.git # linaro and gnu
+
+# How to use.... (UBUNTU 16.04)
+# "./build -r" will download everything needed to build gcc
+# "./build -c" will clean the working dictionary
+# "./build" will build the gcc
 
 CONFIGURATION="--disable-multilib" #--disable-shared --enable-static
 target="aarch64-linux-gnu"
@@ -25,9 +29,10 @@ mpc="mpc-1.0.3"
 isl="isl-0.17.1"
 cloog="cloog-0.18.4"
 glibc="glibc-2.23"
-tmpfs="yes"
+tmpfs="yes" # set this to an no if your machin does not have much ram
 
 if [ "$@" == "-r" ]; then
+	sudo apt install libc6-dev:amd64 texinfo git flex gawk
 	if [ ! -e $mpfr.tar.xz ] && [ ! -d $mpfr ]; then
 		wget http://www.mpfr.org/mpfr-current/$mpfr.tar.xz &
 		EX=1
