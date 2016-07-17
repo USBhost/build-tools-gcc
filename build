@@ -1,0 +1,200 @@
+#!/bin/bash
+
+# sudo apt install libc6-dev:amd64 texinfo git flex gawk
+# http://preshing.com/20141119/how-to-build-a-gcc-cross-compiler/ # credits for almost everything
+# http://www.mpfr.org/
+# https://gmplib.org/
+# http://www.multiprecision.org/
+# http://www.cloog.org/ # not needed for gcc 5 and up
+# http://isl.gforge.inria.fr/
+# https://www.gnu.org/software/binutils/
+# https://www.gnu.org/software/libc/
+# https://www.kernel.org/
+# https://git.linaro.org/toolchain/gcc.git # linaro and gnu
+
+CONFIGURATION="--disable-multilib" #--disable-shared --enable-static
+target="aarch64-linux-gnu"
+GCC="gcc-6-branch"
+ARCH="arm64"
+install="$PWD/$target"
+kernel="linux"
+binutils="binutils-2.26.1"
+gmp="gmp-6.1.1"
+mpfr="mpfr-3.1.4"
+mpc="mpc-1.0.3"
+isl="isl-0.17.1"
+cloog="cloog-0.18.4"
+glibc="glibc-2.23"
+tmpfs="yes"
+
+if [ "$@" == "-r" ]; then
+	if [ ! -e $mpfr.tar.xz ] && [ ! -d $mpfr ]; then
+		wget http://www.mpfr.org/mpfr-current/$mpfr.tar.xz &
+		EX=1
+	fi
+	if [ ! -e $gmp.tar.xz ] && [ ! -d $gmp ]; then
+		wget https://gmplib.org/download/gmp/$gmp.tar.xz &
+		EX=1
+	fi
+	if [ ! -e $mpc.tar.gz ] && [ ! -d $mpc ]; then
+		wget ftp://ftp.gnu.org/gnu/mpc/$mpc.tar.gz &
+		EX=1
+	fi
+	if [ ! -e $cloog.tar.gz ] && [ ! -d $cloog ]; then
+		wget http://www.bastoul.net/cloog/pages/download/$cloog.tar.gz &
+		EX=1
+	fi
+	if [ ! -e $isl.tar.xz ] && [ ! -d $isl ]; then
+		wget http://isl.gforge.inria.fr/$isl.tar.xz &
+		EX=1
+	fi
+	if [ ! -e $binutils.tar.gz ] && [ ! -d $binutils ]; then
+		wget http://ftp.gnu.org/gnu/binutils/$binutils.tar.gz &
+		EX=1
+	fi
+	if [ ! -e $glibc.tar.gz ] && [ ! -d $glibc ]; then
+		wget http://ftp.gnu.org/gnu/glibc/$glibc.tar.xz &
+		EX=1
+	fi
+	if [ ! -e gcc ]; then
+		git clone https://git.linaro.org/toolchain/gcc.git &
+	fi
+	if [ ! -e $kernel ]; then
+		git clone https://github.com/torvalds/linux.git &
+	fi
+	for job in `jobs -p` 
+	do
+		wait $job 
+	done
+	if [ "$EX" == "1" ]; then
+		for f in *.tar*; do tar xfk $f; done
+		rm *.tar*
+	fi
+	echo "done downloading"
+	exit 1
+fi
+if [ "$@" == "-c" ]; then
+	cd build-glibc
+		rm -rf *
+	cd ..
+
+	cd build-gcc
+		rm -rf *
+	cd ..
+
+	cd $binutils
+		clean="$(find -name config.cache)"
+		rm $clean
+	cd ..
+	rm $install.tar
+	rm -rf $install
+	echo "done cleaning up"
+	exit 1
+fi
+if [ "$@" == "-u" ]; then
+	cd gcc
+		git remote update
+		git checkout $GCC
+		git merge origin/$GCC
+	cd ..
+
+	cd linux
+		git remote update
+		git merge origin/master
+	cd ..
+	echo "done updating"
+	exit 1
+fi
+
+
+job="-j$(cat /proc/cpuinfo | grep -c processor)"
+export PATH=$install/bin:$PATH
+
+mkdir -p build-glibc
+mkdir -p build-gcc
+
+if [ "$tmpfs" == "yes" ]; then
+	sudo mount -t tmpfs -o rw none build-glibc
+	sudo mount -t tmpfs -o rw none build-gcc
+fi
+
+cd gcc
+	ln -s ../$mpfr mpfr
+	ln -s ../$gmp gmp
+	ln -s ../$mpc mpc
+	ln -s ../$isl isl
+	ln -s ../$cloog cloog
+cd ..
+
+stage=0
+echo "stage: $stage"
+
+cd $binutils
+	./configure $CONFIGURATION --target=$target --prefix=$install
+	make $job || exit 1
+	make install $job || exit 1
+cd ..
+
+stage=1
+echo "stage: $stage"
+
+cd $kernel
+	make ARCH=$ARCH INSTALL_HDR_PATH=$install/$target headers_install $job || exit 1
+cd ..
+
+stage=2
+echo "stage: $stage"
+
+cd build-gcc
+	../gcc/configure $CONFIGURATION --enable-languages=c --target=$target --prefix=$install
+	make all-gcc $job || exit 1
+	make install-gcc $job || exit 1
+cd ..
+
+stage=3
+echo "stage: $stage"
+
+cd build-glibc
+	../$glibc/configure --prefix=$install/$target --build=$MACHTYPE --host=$target --target=$target --with-headers=$install/$target/include --disable-multilib libc_cv_forced_unwind=yes
+	make install-bootstrap-headers=yes install-headers
+	make csu/subdir_lib $job || exit 1
+	install csu/crt1.o csu/crti.o csu/crtn.o $install/$target/lib
+	$target-gcc -nostdlib -nostartfiles -shared -x c /dev/null -o $install/$target/lib/libc.so
+	touch $install/$target/include/gnu/stubs.h
+cd ..
+
+stage=4
+echo "stage: $stage"
+
+cd build-gcc
+	make all-target-libgcc $job || exit 1
+	make install-target-libgcc $job || exit 1
+cd ..
+
+stage=5
+echo "stage: $stage"
+
+cd build-glibc
+	make CFLAGS+="-O2 -Wno-parentheses -Wno-switch-unreachable" $job || exit 1
+	make install $job || exit 1
+cd ..
+
+stage=6
+echo "stage: $stage"
+
+cd build-gcc
+	make all $job || exit 1
+	make install $job || exit 1
+cd ..
+
+stage=done
+echo "stage: $stage"
+
+if [ "$tmpfs" == "yes" ]; then
+	sudo umount build-glibc
+	sudo umount build-gcc
+fi
+
+tar -cvf $install.tar $install
+gzip -9 aarch64-linux-gnu.tar
+
