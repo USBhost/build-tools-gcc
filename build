@@ -11,7 +11,8 @@
 # https://www.kernel.org/
 # https://git.linaro.org/toolchain/gcc.git # linaro and gnu
 
-# How to use.... (UBUNTU 16.04)
+# This script should be able to build most versions (i only tryed 4.9 5 and 6)
+# How to use.... (UBUNTU 16.04 clean install)
 # "./build -r" will download everything needed to build gcc
 # "./build -c" will clean the working dictionary
 # "./build -u" will update the source for gcc and linux
