@@ -125,11 +125,11 @@ if [ "$tmpfs" == "yes" ]; then
 fi
 
 cd gcc
-	ln -s ../$mpfr mpfr
-	ln -s ../$gmp gmp
-	ln -s ../$mpc mpc
-	ln -s ../$isl isl
-	ln -s ../$cloog cloog
+	ln -s -f ../$mpfr mpfr
+	ln -s -f ../$gmp gmp
+	ln -s -f ../$mpc mpc
+	ln -s -f ../$isl isl
+	ln -s -f ../$cloog cloog
 cd ..
 
 stage=0
