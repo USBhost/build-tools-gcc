@@ -14,6 +14,7 @@
 # How to use.... (UBUNTU 16.04)
 # "./build -r" will download everything needed to build gcc
 # "./build -c" will clean the working dictionary
+# "./build -u" will update the source for gcc and linux
 # "./build" will build the gcc
 
 CONFIGURATION="--disable-multilib" #--disable-shared --enable-static
