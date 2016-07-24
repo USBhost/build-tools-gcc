@@ -91,7 +91,7 @@ if [ "$@" == "-c" ]; then
 		clean="$(find -name config.cache)"
 		rm $clean
 	cd ..
-	rm $install.tar
+	rm $install.tar.gz
 	rm -rf $install
 	echo "done cleaning up"
 	exit 1
