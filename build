@@ -21,6 +21,7 @@
 CONFIGURATION="--disable-multilib" #--disable-shared --enable-static
 target="aarch64-linux-gnu"
 GCC="gcc-6-branch"
+linux="linux-4.7.y"
 ARCH="arm64"
 install="$PWD/$target"
 binutils="binutils-2.26.1"
@@ -65,8 +66,8 @@ if [ "$@" == "-r" ]; then
 	if [ ! -e gcc ]; then
 		git clone https://git.linaro.org/toolchain/gcc.git &
 	fi
-	if [ ! -e $kernel ]; then
-		git clone https://github.com/torvalds/linux.git &
+	if [ ! -e linux-stable ]; then
+		git clone https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git &
 	fi
 	for job in `jobs -p` 
 	do
@@ -102,11 +103,14 @@ if [ "$@" == "-u" ]; then
 		git remote update
 		git checkout $GCC
 		git merge origin/$GCC
+		sync
 	cd ..
 
-	cd linux
+	cd linux-stable
 		git remote update
-		git merge origin/master
+		git checkout $linux
+		git merge origin/$linux
+		sync
 	cd ..
 	echo "done updating"
 	exit 1
@@ -144,7 +148,7 @@ cd ..
 stage=1
 echo "stage: $stage"
 
-cd $kernel
+cd linux-stable
 	make ARCH=$ARCH INSTALL_HDR_PATH=$install/$target headers_install $job || exit 1
 cd ..
 
