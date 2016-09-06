@@ -23,7 +23,6 @@ target="aarch64-linux-gnu"
 GCC="gcc-6-branch"
 ARCH="arm64"
 install="$PWD/$target"
-kernel="linux"
 binutils="binutils-2.26.1"
 gmp="gmp-6.1.1"
 mpfr="mpfr-3.1.4"
@@ -66,7 +65,7 @@ if [ "$@" == "-r" ]; then
 	if [ ! -e gcc ]; then
 		git clone https://git.linaro.org/toolchain/gcc.git &
 	fi
-	if [ ! -e $kernel ]; then
+	if [ ! -e linux ]; then
 		git clone https://github.com/torvalds/linux.git &
 	fi
 	for job in `jobs -p` 
@@ -145,7 +144,7 @@ cd ..
 stage=1
 echo "stage: $stage"
 
-cd $kernel
+cd linux
 	make ARCH=$ARCH INSTALL_HDR_PATH=$install/$target headers_install $job || exit 1
 cd ..
 
