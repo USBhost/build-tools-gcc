@@ -23,13 +23,13 @@ target="aarch64-linux-gnu"
 GCC="gcc-6-branch"
 ARCH="arm64"
 install="$PWD/$target"
-binutils="binutils-2.26.1"
+binutils="binutils-2.27"
 gmp="gmp-6.1.1"
 mpfr="mpfr-3.1.4"
 mpc="mpc-1.0.3"
 isl="isl-0.17.1"
 cloog="cloog-0.18.4"
-glibc="glibc-2.23"
+glibc="glibc-2.24"
 tmpfs="yes" # set this to an no if your machin does not have much ram
 
 if [ "$@" == "-r" ]; then
