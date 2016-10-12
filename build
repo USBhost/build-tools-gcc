@@ -11,25 +11,26 @@
 # https://www.kernel.org/
 # https://git.linaro.org/toolchain/gcc.git # linaro and gnu
 
-# This script should be able to build most versions (i only tryed 4.9 5 and 6)
-# How to use.... (UBUNTU 16.04 clean install)
+# This script should be able to build most versions (i only tried 4.9 5 and 6/tends to go bad somtimes)
+# How to use.... (UBUNTU 16.04/10 clean install)
 # "./build -r" will download everything needed to build gcc
 # "./build -c" will clean the working dictionary
 # "./build -u" will update the source for gcc and linux
 # "./build" will build the gcc
 
-CONFIGURATION="--disable-multilib" #--disable-shared --enable-static
+CONFIGURATION="--disable-multilib" # --disable-shared --enable-static
 target="aarch64-linux-gnu"
-GCC="gcc-6-branch"
+GCC="linaro/gcc-6-branch"
 ARCH="arm64"
 install="$PWD/$target"
 binutils="binutils-2.27"
 gmp="gmp-6.1.1"
-mpfr="mpfr-3.1.4"
+mpfr="mpfr-3.1.5"
 mpc="mpc-1.0.3"
 isl="isl-0.17.1"
 cloog="cloog-0.18.4"
 glibc="glibc-2.24"
+kernel="3.10.103"
 tmpfs="yes" # set this to an no if your machin does not have much ram
 
 if [ "$@" == "-r" ]; then
@@ -58,7 +59,7 @@ if [ "$@" == "-r" ]; then
 		wget http://ftp.gnu.org/gnu/binutils/$binutils.tar.gz &
 		EX=1
 	fi
-	if [ ! -e $glibc.tar.gz ] && [ ! -d $glibc ]; then
+	if [ ! -e $glibc.tar.xz ] && [ ! -d $glibc ]; then
 		wget http://ftp.gnu.org/gnu/glibc/$glibc.tar.xz &
 		EX=1
 	fi
@@ -83,27 +84,24 @@ if [ "$@" == "-c" ]; then
 	cd build-glibc
 		rm -rf *
 	cd ..
-
 	cd build-gcc
 		rm -rf *
 	cd ..
-
 	cd $binutils
 		clean="$(find -name config.cache)"
 		rm $clean
 	cd ..
-	rm $install.tar.gz
-	rm -rf $install
+	rm $target.*
+	rm -rf $target
 	echo "done cleaning up"
 	exit 1
 fi
-if [ "$@" == "-u" ]; then
+if [ "$@" == "-u" ] || [ "$@" == "-r" ]; then
 	cd gcc
 		git remote update
 		git checkout $GCC
 		git merge origin/$GCC
 	cd ..
-
 	cd linux
 		git remote update
 		git merge origin/master
@@ -120,6 +118,8 @@ mkdir -p build-glibc
 mkdir -p build-gcc
 
 if [ "$tmpfs" == "yes" ]; then
+	sudo umount build-glibc
+	sudo umount build-gcc
 	sudo mount -t tmpfs -o rw none build-glibc
 	sudo mount -t tmpfs -o rw none build-gcc
 fi
@@ -161,7 +161,7 @@ stage=3
 echo "stage: $stage"
 
 cd build-glibc
-	../$glibc/configure --prefix=$install/$target --build=$MACHTYPE --host=$target --target=$target --with-headers=$install/$target/include --disable-multilib libc_cv_forced_unwind=yes
+	../$glibc/configure --prefix=$install/$target --build=$MACHTYPE --host=$target --target=$target --with-headers=$install/$target/include $CONFIGURATION libc_cv_forced_unwind=yes --enable-kernel=$kernel
 	make install-bootstrap-headers=yes install-headers
 	make csu/subdir_lib $job || exit 1
 	install csu/crt1.o csu/crti.o csu/crtn.o $install/$target/lib
@@ -181,7 +181,7 @@ stage=5
 echo "stage: $stage"
 
 cd build-glibc
-	make CFLAGS+="-O2 -Wno-parentheses -Wno-switch-unreachable" $job || exit 1
+	make $job || exit 1
 	make install $job || exit 1
 cd ..
 
@@ -201,6 +201,6 @@ if [ "$tmpfs" == "yes" ]; then
 	sudo umount build-gcc
 fi
 
-tar -cvf $install.tar $install
+tar -cvf $target.tar $target
 gzip -9 aarch64-linux-gnu.tar
 
