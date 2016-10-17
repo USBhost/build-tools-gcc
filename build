@@ -30,7 +30,6 @@ mpc="mpc-1.0.3"
 isl="isl-0.17.1"
 cloog="cloog-0.18.4"
 glibc="glibc-2.24"
-kernel="3.10.103"
 tmpfs="yes" # set this to an no if your machin does not have much ram
 
 if [ "$@" == "-r" ]; then
@@ -161,7 +160,7 @@ stage=3
 echo "stage: $stage"
 
 cd build-glibc
-	../$glibc/configure --prefix=$install/$target --build=$MACHTYPE --host=$target --target=$target --with-headers=$install/$target/include $CONFIGURATION libc_cv_forced_unwind=yes --enable-kernel=$kernel
+	../$glibc/configure --prefix=$install/$target --build=$MACHTYPE --host=$target --target=$target --with-headers=$install/$target/include $CONFIGURATION libc_cv_forced_unwind=yes
 	make install-bootstrap-headers=yes install-headers
 	make csu/subdir_lib $job || exit 1
 	install csu/crt1.o csu/crti.o csu/crtn.o $install/$target/lib
