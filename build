@@ -111,9 +111,6 @@ mkdir -p build-gcc
 mkdir -p build-binutils
 
 if [ "$tmpfs" == "yes" ]; then
-	sudo umount build-glibc
-	sudo umount build-gcc
-	sudo umount build-binutils
 	sudo mount -t tmpfs -o rw none build-glibc
 	sudo mount -t tmpfs -o rw none build-gcc
 	sudo mount -t tmpfs -o rw none build-binutils
