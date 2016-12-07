@@ -18,7 +18,7 @@
 # "./build -u" will update the source for gcc and linux
 # "./build" will build the gcc
 
-CONFIGURATION="--disable-multilib" # --disable-shared --enable-static
+CONFIGURATION="--disable-multilib"
 target="aarch64-linux-gnu"
 GCC="linaro/gcc-6-branch"
 ARCH="arm64"
@@ -31,6 +31,8 @@ isl="isl-0.17.1"
 cloog="cloog-0.18.4"
 glibc="glibc-2.24"
 tmpfs="yes" # set this to an no if your machin does not have much ram
+job="-j$(cat /proc/cpuinfo | grep -c processor)"
+PATH=$install/bin:$PATH
 
 if [ "$@" == "-r" ]; then
 	sudo apt install libc6-dev:amd64 texinfo git flex gawk
@@ -77,7 +79,6 @@ if [ "$@" == "-r" ]; then
 		rm *.tar*
 	fi
 	echo "done downloading"
-	exit 1
 fi
 if [ "$@" == "-c" ]; then
 	rm -rf build-glibc/*
@@ -86,7 +87,6 @@ if [ "$@" == "-c" ]; then
 	rm $target.*
 	rm -rf $target
 	echo "done cleaning up"
-	exit 1
 fi
 if [ "$@" == "-u" ] || [ "$@" == "-r" ]; then
 	cd gcc
@@ -99,12 +99,11 @@ if [ "$@" == "-u" ] || [ "$@" == "-r" ]; then
 		git merge origin/master
 	cd ..
 	echo "done updating"
-	exit 1
 fi
 
-
-job="-j$(cat /proc/cpuinfo | grep -c processor)"
-export PATH=$install/bin:$PATH
+if [ "$@" != "" ]; then
+	exit 0
+fi
 
 mkdir -p build-glibc
 mkdir -p build-gcc
@@ -124,70 +123,64 @@ cd gcc
 	ln -s -f ../$cloog cloog
 cd ..
 
-stage=0
-echo "stage: $stage"
-
+echo "stage: 1"
 cd build-binutils
 	../$binutils/configure $CONFIGURATION --target=$target --prefix=$install
 	make $job || exit 1
 	make install $job || exit 1
 cd ..
 
-stage=1
-echo "stage: $stage"
-
+echo "stage: 2"
 cd linux
 	make ARCH=$ARCH INSTALL_HDR_PATH=$install/$target headers_install $job || exit 1
 cd ..
 
-stage=2
-echo "stage: $stage"
-
+echo "stage: 3"
 cd build-gcc
 	../gcc/configure $CONFIGURATION --enable-languages=c --target=$target --prefix=$install
 	make all-gcc $job || exit 1
 	make install-gcc $job || exit 1
+	if [ "$ARCH" == "x86_64" ]; then
+		make all-target-libgcc $job || exit 1
+		make install-target-libgcc $job || exit 1
+	fi
 cd ..
 
-stage=3
-echo "stage: $stage"
-
+echo "stage: 4"
 cd build-glibc
 	../$glibc/configure --prefix=$install/$target --build=$MACHTYPE --host=$target --target=$target --with-headers=$install/$target/include $CONFIGURATION libc_cv_forced_unwind=yes
-	make install-bootstrap-headers=yes install-headers || exit 1
+	make install-bootstrap-headers=yes install-headers $job || exit 1
 	make csu/subdir_lib $job || exit 1
 	install csu/crt1.o csu/crti.o csu/crtn.o $install/$target/lib
 	$target-gcc -nostdlib -nostartfiles -shared -x c /dev/null -o $install/$target/lib/libc.so
 	touch $install/$target/include/gnu/stubs.h
+	if [ "$ARCH" == "x86_64" ]; then
+		make $job || exit 1
+		make install $job || exit 1
+	fi
 cd ..
 
-stage=4
-echo "stage: $stage"
+if [ "$ARCH" != "x86_64" ]; then
+	echo "stage: 4.1"
+	cd build-gcc
+		make all-target-libgcc $job || exit 1
+		make install-target-libgcc $job || exit 1
+	cd ..
 
-cd build-gcc
-	make all-target-libgcc $job || exit 1
-	make install-target-libgcc $job || exit 1
-cd ..
+	echo "stage: 4.2"
+	cd build-glibc
+		make $job || exit 1
+		make install $job || exit 1
+	cd ..
+fi
 
-stage=5
-echo "stage: $stage"
-
-cd build-glibc
-	make $job || exit 1
-	make install $job || exit 1
-cd ..
-
-stage=6
-echo "stage: $stage"
-
+echo "stage: 5"
 cd build-gcc
 	make all $job || exit 1
 	make install $job || exit 1
 cd ..
 
-stage=done
-echo "stage: $stage"
-
+echo "stage: done"
 if [ "$tmpfs" == "yes" ]; then
 	sudo umount build-glibc
 	sudo umount build-gcc
