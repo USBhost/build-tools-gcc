@@ -34,7 +34,7 @@ tmpfs="yes" # set this to an no if your machin does not have much ram
 job="-j$(cat /proc/cpuinfo | grep -c processor)"
 PATH=$install/bin:$PATH
 
-if [ "$@" == "-r" ]; then
+if [[ "$@" == "-r" ]]; then
 	sudo apt install libc6-dev:amd64 texinfo git flex gawk
 	if [ ! -e $mpfr.tar.xz ] && [ ! -d $mpfr ]; then
 		wget http://www.mpfr.org/mpfr-current/$mpfr.tar.xz &
@@ -80,7 +80,7 @@ if [ "$@" == "-r" ]; then
 	fi
 	echo "done downloading"
 fi
-if [ "$@" == "-c" ]; then
+if [[ "$@" == "-c" ]]; then
 	rm -rf build-glibc/*
 	rm -rf build-gcc/*
 	rm -rf build-binutils/*
@@ -88,7 +88,7 @@ if [ "$@" == "-c" ]; then
 	rm -rf $target
 	echo "done cleaning up"
 fi
-if [ "$@" == "-u" ] || [ "$@" == "-r" ]; then
+if [[ "$@" == "-u" ]] || [[ "$@" == "-r" ]]; then
 	cd gcc
 		git remote update
 		git checkout $GCC
@@ -101,7 +101,7 @@ if [ "$@" == "-u" ] || [ "$@" == "-r" ]; then
 	echo "done updating"
 fi
 
-if [ "$@" != "" ]; then
+if [[ "$@" != "" ]]; then
 	exit 0
 fi
 
