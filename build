@@ -20,14 +20,14 @@
 
 CONFIGURATION="--disable-multilib"
 target="aarch64-linux-gnu"
-GCC="linaro/gcc-6-branch"
+GCC="gcc-6-branch"
 ARCH="arm64"
 install="$PWD/$target"
 binutils="binutils-2.27"
-gmp="gmp-6.1.1"
+gmp="gmp-6.1.2"
 mpfr="mpfr-3.1.5"
 mpc="mpc-1.0.3"
-isl="isl-0.17.1"
+isl="isl-0.18"
 cloog="cloog-0.18.4"
 glibc="glibc-2.24"
 tmpfs="yes" # set this to an no if your machin does not have much ram
