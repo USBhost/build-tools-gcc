@@ -47,7 +47,7 @@ if [[ "$@" == "-r" ]]; then
 		EX=1
 	fi
 	if [ ! -e isl ]; then
-		git clone http://repo.or.cz/w/isl.git -b $isl &
+		git clone git://repo.or.cz/isl.git -b $isl &
 		cd isl && ./autogen && cd ..
 	fi
 	if [ ! -e $binutils ]; then
