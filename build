@@ -9,7 +9,6 @@
 # https://www.gnu.org/software/libc/
 # https://www.kernel.org/
 # https://git.linaro.org/toolchain/gcc.git # linaro and gnu
-
 # This script should be able to build most versions (i only tried 4.9 5 and 6/tends to go bad somtimes)
 # How to use.... (UBUNTU 16.04/10 clean install)
 # "./build -r" will download everything needed to build gcc
@@ -46,11 +45,10 @@ if [[ "$@" == "-r" ]]; then
 		wget ftp://ftp.gnu.org/gnu/mpc/$mpc.tar.gz &
 		EX=1
 	fi
-	if [ ! -e isl ]; then
+	if [ ! -d isl ]; then
 		git clone git://repo.or.cz/isl.git -b $isl &
-		cd isl && ./autogen && cd ..
 	fi
-	if [ ! -e $binutils ]; then
+	if [ ! -d binutils ]; then
 		git clone https://git.linaro.org/toolchain/binutils-gdb.git binutils -b $binutils &
 	fi
 	if [ ! -e $glibc.tar.xz ] && [ ! -d $glibc ]; then
@@ -70,6 +68,9 @@ if [[ "$@" == "-r" ]]; then
 	if [ "$EX" == "1" ]; then
 		for f in *.tar*; do tar xfk $f; done
 		rm *.tar*
+	fi
+	if [ -d isl ]; then
+		cd isl && ./autogen.sh && cd ..
 	fi
 	echo "done downloading"
 fi
