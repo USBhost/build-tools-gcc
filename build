@@ -32,7 +32,6 @@ job="-j$(cat /proc/cpuinfo | grep -c processor)"
 PATH=$install/bin:$PATH
 
 if [[ "$@" == "-r" ]]; then
-	sudo apt install libc6-dev:amd64 texinfo git flex gawk
 	if [ ! -e $mpfr.tar.xz ] && [ ! -d $mpfr ]; then
 		wget http://www.mpfr.org/mpfr-current/$mpfr.tar.xz &
 		EX=1
