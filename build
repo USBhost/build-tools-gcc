@@ -27,7 +27,7 @@ binutils="binutils-2.28"
 gmp="gmp-6.1.2"
 mpfr="mpfr-3.1.5"
 mpc="mpc-1.0.3"
-isl="isl-0.18"
+isl="master"
 cloog="cloog-0.18.4"
 glibc="glibc-2.25"
 tmpfs="yes" # set this to an no if your machin does not have much ram
@@ -52,13 +52,11 @@ if [[ "$@" == "-r" ]]; then
 		wget http://www.bastoul.net/cloog/pages/download/$cloog.tar.gz &
 		EX=1
 	fi
-	if [ ! -e $isl.tar.xz ] && [ ! -d $isl ]; then
-		wget http://isl.gforge.inria.fr/$isl.tar.xz &
-		EX=1
+	if [ ! -e isl ]; then
+		git clone http://repo.or.cz/w/isl.git -b $isl &
 	fi
-	if [ ! -e $binutils.tar.gz ] && [ ! -d $binutils ]; then
-		wget http://ftp.gnu.org/gnu/binutils/$binutils.tar.gz &
-		EX=1
+	if [ ! -e $binutils ]; then
+		git clone https://git.linaro.org/toolchain/binutils-gdb.git binutils -b $binutils &
 	fi
 	if [ ! -e $glibc.tar.xz ] && [ ! -d $glibc ]; then
 		wget http://ftp.gnu.org/gnu/glibc/$glibc.tar.xz &
@@ -119,13 +117,13 @@ cd gcc
 	ln -s -f ../$mpfr mpfr
 	ln -s -f ../$gmp gmp
 	ln -s -f ../$mpc mpc
-	ln -s -f ../$isl isl
+	ln -s -f ../isl isl
 	ln -s -f ../$cloog cloog
 cd ..
 
 echo "stage: 1"
 cd build-binutils
-	../$binutils/configure $CONFIGURATION --target=$target --prefix=$install
+	../binutils/configure $CONFIGURATION --target=$target --prefix=$install
 	make $job || exit 1
 	make install $job || exit 1
 cd ..
