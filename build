@@ -4,7 +4,6 @@
 # http://www.mpfr.org/
 # https://gmplib.org/
 # http://www.multiprecision.org/
-# http://www.cloog.org/ # not needed for gcc 5 and up
 # http://isl.gforge.inria.fr/
 # https://www.gnu.org/software/binutils/
 # https://www.gnu.org/software/libc/
@@ -28,7 +27,6 @@ gmp="gmp-6.1.2"
 mpfr="mpfr-3.1.5"
 mpc="mpc-1.0.3"
 isl="master"
-cloog="cloog-0.18.4"
 glibc="glibc-2.25"
 tmpfs="yes" # set this to an no if your machin does not have much ram
 job="-j$(cat /proc/cpuinfo | grep -c processor)"
@@ -46,10 +44,6 @@ if [[ "$@" == "-r" ]]; then
 	fi
 	if [ ! -e $mpc.tar.gz ] && [ ! -d $mpc ]; then
 		wget ftp://ftp.gnu.org/gnu/mpc/$mpc.tar.gz &
-		EX=1
-	fi
-	if [ ! -e $cloog.tar.gz ] && [ ! -d $cloog ]; then
-		wget http://www.bastoul.net/cloog/pages/download/$cloog.tar.gz &
 		EX=1
 	fi
 	if [ ! -e isl ]; then
@@ -118,7 +112,6 @@ cd gcc
 	ln -s -f ../$gmp gmp
 	ln -s -f ../$mpc mpc
 	ln -s -f ../isl isl
-	ln -s -f ../$cloog cloog
 cd ..
 
 echo "stage: 1"
