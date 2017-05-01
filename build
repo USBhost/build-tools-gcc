@@ -190,5 +190,5 @@ if [ "$tmpfs" == "yes" ]; then
 	sudo umount build-binutils
 fi
 
-XZ_OPT=-9 tar cJf $target.tar $target
+XZ_OPT=-9 tar cJf $target.tar.xz $target
 
