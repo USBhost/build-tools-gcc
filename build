@@ -44,15 +44,15 @@ if [[ "$@" == "-r" ]]; then
 		wget ftp://ftp.gnu.org/gnu/mpc/$mpc.tar.gz &
 		EX=1
 	fi
-	if [ ! -d isl ]; then
-		git clone git://repo.or.cz/isl.git -b $isl &
-	fi
-	if [ ! -d binutils ]; then
-		git clone https://git.linaro.org/toolchain/binutils-gdb.git binutils -b $binutils &
-	fi
 	if [ ! -e $glibc.tar.xz ] && [ ! -d $glibc ]; then
 		wget http://ftp.gnu.org/gnu/glibc/$glibc.tar.xz &
 		EX=1
+	fi
+	if [ ! -e isl ]; then
+		git clone git://repo.or.cz/isl.git -b $isl &
+	fi
+	if [ ! -e binutils ]; then
+		git clone https://git.linaro.org/toolchain/binutils-gdb.git binutils -b $binutils &
 	fi
 	if [ ! -e gcc ]; then
 		git clone https://git.linaro.org/toolchain/gcc.git &
@@ -82,6 +82,17 @@ if [[ "$@" == "-c" ]]; then
 	echo "done cleaning up"
 fi
 if [[ "$@" == "-u" ]] || [[ "$@" == "-r" ]]; then
+	cd isl
+		git remote update
+		git checkout $isl
+		git merge origin/$isl
+		./autogen.sh
+	cd ..
+	cd binutils
+		git remote update
+		git checkout $binutils
+		git merge origin/$binutils
+	cd ..
 	cd gcc
 		git remote update
 		git checkout $GCC
