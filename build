@@ -16,9 +16,9 @@
 # "./build -u" will update the source for gcc and linux
 # "./build" will build the gcc
 
-CONFIGURATION="--disable-multilib"
+CONFIGURATION="--disable-multilib --disable-werror"
 target="aarch64-linux-gnu"
-GCC="linaro-6.3-2017.05-rc1"
+GCC="gcc-6-branch"
 ARCH="arm64"
 install="$PWD/$target"
 binutils="binutils-2_28-branch"
@@ -117,7 +117,7 @@ cd ..
 
 echo "stage: 1"
 cd build-binutils
-	../binutils/configure $CONFIGURATION --target=$target --prefix=$install
+	../binutils/configure $CONFIGURATION --target=$target --prefix=$install --disable-gdb
 	make $job || exit 1
 	make install $job || exit 1
 cd ..
@@ -181,4 +181,3 @@ fi
 
 tar -cvf $target.tar $target
 gzip -9 $target.tar
-
