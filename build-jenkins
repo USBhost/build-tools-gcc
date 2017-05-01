@@ -27,8 +27,7 @@ mpfr="mpfr-3.1.5"
 mpc="mpc-1.0.3"
 isl="master"
 glibc="glibc-2.25"
-tmpfs="yes" # set this to an no if your machin does not have much ram
-job="-j$(cat /proc/cpuinfo | grep -c processor)"
+job="-j18"
 PATH=$install/bin:$PATH
 
 if [[ "$@" == "-r" ]]; then
@@ -73,40 +72,10 @@ if [[ "$@" == "-r" ]]; then
 	fi
 	echo "done downloading"
 fi
-if [[ "$@" == "-c" ]]; then
-	rm -rf build-glibc/*
-	rm -rf build-gcc/*
-	rm -rf build-binutils/*
-	rm $target.*
-	rm -rf $target
-	echo "done cleaning up"
-fi
-if [[ "$@" == "-u" ]] || [[ "$@" == "-r" ]]; then
-	cd gcc
-		git remote update
-		git checkout $GCC
-		git merge origin/$GCC
-	cd ..
-	cd linux
-		git remote update
-		git merge origin/master
-	cd ..
-	echo "done updating"
-fi
-
-if [[ "$@" != "" ]]; then
-	exit 0
-fi
 
 mkdir -p build-glibc
 mkdir -p build-gcc
 mkdir -p build-binutils
-
-if [ "$tmpfs" == "yes" ]; then
-	sudo mount -t tmpfs -o rw none build-glibc
-	sudo mount -t tmpfs -o rw none build-gcc
-	sudo mount -t tmpfs -o rw none build-binutils
-fi
 
 cd gcc
 	ln -s -f ../$mpfr mpfr
@@ -173,11 +142,6 @@ cd build-gcc
 cd ..
 
 echo "stage: done"
-if [ "$tmpfs" == "yes" ]; then
-	sudo umount build-glibc
-	sudo umount build-gcc
-	sudo umount build-binutils
-fi
 
 XZ_OPT=-9 tar cJf $target.tar.xz $target
 
