@@ -71,6 +71,7 @@ if [[ "$@" == "-r" ]]; then
 		cd isl && ./autogen.sh && cd ..
 	fi
 	echo "done downloading"
+	exit 0;
 fi
 
 mkdir -p build-glibc
