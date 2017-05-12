@@ -185,9 +185,9 @@ cd ..
 
 echo "stage: done"
 if [ "$tmpfs" == "yes" ]; then
-	sudo umount build-glibc
-	sudo umount build-gcc
-	sudo umount build-binutils
+	sudo umount -f build-glibc
+	sudo umount -f build-gcc
+	sudo umount -f build-binutils
 fi
 
 XZ_OPT=-9 tar cJf $target.tar.xz $target
