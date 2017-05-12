@@ -11,10 +11,7 @@
 # https://git.linaro.org/toolchain/gcc.git # linaro and gnu
 # This script should be able to build most versions (i only tried 4.9 5 and 6/tends to go bad somtimes)
 # How to use.... (UBUNTU 16.04/10 clean install)
-# "./build -r" will download everything needed to build gcc
-# "./build -c" will clean the working dictionary
-# "./build -u" will update the source for gcc and linux
-# "./build" will build the gcc
+# ./build -h
 
 CONFIGURATION="--disable-multilib --disable-werror"
 target="aarch64-linux-gnu"
@@ -31,7 +28,45 @@ tmpfs="yes" # set this to an no if your machin does not have much ram
 job="-j$(cat /proc/cpuinfo | grep -c processor)"
 PATH=$install/bin:$PATH
 
-if [[ "$@" == "-r" ]]; then
+function help_menu() {
+	BOLD="\033[1m"
+	RST="\033[0m"
+	echo -e ""
+	echo -e "${BOLD}OVERVIEW:${RST} Builds an aarch64 gcc toolchain\n"
+	echo -e "${BOLD}USAGE:${RST} bash ${0} <options>\n"
+	echo -e "${BOLD}EXAMPLE:${RST} bash ${0} -u -c -b\n"
+	echo -e "${BOLD}OPTIONAL PARAMETERS:${RST}"
+	echo -e "  -b | --build:       Builds the toolchain"
+	echo -e "  -c | --clean:       Cleans up the last compilation"
+	echo -e "  -d | --download:    Downloads the necessary components to build"
+	echo -e "  -l | --linaro:      Use Linaro's gcc branch instead of GNU's"
+	echo -e "  -u | --update:      Updates the downloaded components\n"
+	echo -e "Download MUST be run before building. No options falls back to just building\n"
+}
+
+# Get parameters
+[[ $? = 0 ]] && BUILD=true
+
+while [[ $# -ge 1 ]]; do
+	case "${1}" in
+		"-b"|"--build")
+			BUILD=true ;;
+		"-c"|"--clean")
+			CLEAN=true ;;
+		"-d"|"--download")
+			DOWNLOAD=true ;;
+		"-h"|"--help")
+			help_menu && exit ;;
+		"-l"|"--linaro")
+			GCC="linaro-local/releases/linaro-6.3-2017.05" ;;
+		"-u"|"--update")
+			UPDATE=true ;;
+	esac
+
+	shift
+done
+
+if [[ ${DOWNLOAD} = true ]]; then
 	if [ ! -e $mpfr.tar.xz ] && [ ! -d $mpfr ]; then
 		wget http://www.mpfr.org/mpfr-current/$mpfr.tar.xz &
 		EX=1
@@ -73,7 +108,7 @@ if [[ "$@" == "-r" ]]; then
 	fi
 	echo "done downloading"
 fi
-if [[ "$@" == "-c" ]]; then
+if [[ ${CLEAN} = true ]]; then
 	rm -rf build-glibc/*
 	rm -rf build-gcc/*
 	rm -rf build-binutils/*
@@ -81,7 +116,7 @@ if [[ "$@" == "-c" ]]; then
 	rm -rf $target
 	echo "done cleaning up"
 fi
-if [[ "$@" == "-u" ]] || [[ "$@" == "-r" ]]; then
+if [[ ${UPDATE} = true ]] || [[ ${DOWNLOAD} = true ]]; then
 	cd isl
 		git remote update
 		git checkout $isl
@@ -105,9 +140,7 @@ if [[ "$@" == "-u" ]] || [[ "$@" == "-r" ]]; then
 	echo "done updating"
 fi
 
-if [[ "$@" != "" ]]; then
-	exit 0
-fi
+[[ -z ${BUILD} ]] && exit
 
 mkdir -p build-glibc
 mkdir -p build-gcc
@@ -117,6 +150,10 @@ if [ "$tmpfs" == "yes" ]; then
 	sudo mount -t tmpfs -o rw none build-glibc
 	sudo mount -t tmpfs -o rw none build-gcc
 	sudo mount -t tmpfs -o rw none build-binutils
+fi
+
+if [[ ! -d gcc ]]; then
+	help_menu && exit
 fi
 
 cd gcc
