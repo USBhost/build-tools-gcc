@@ -112,7 +112,7 @@ if [[ ${CLEAN} = true ]]; then
 	rm -rf build-glibc/*
 	rm -rf build-gcc/*
 	rm -rf build-binutils/*
-	rm $target.*
+	rm -f $target-*.*
 	rm -rf $target
 	echo "done cleaning up"
 fi
@@ -227,5 +227,11 @@ if [ "$tmpfs" == "yes" ]; then
 	sudo umount -f build-binutils
 fi
 
-XZ_OPT=-9 tar cJf $target.tar.xz $target
+if [[ $(echo ${GCC} | grep linaro) ]]; then
+	tag=linaro-$(date +%Y%m%d)
+else
+	tag=$(date +%Y%m%d)
+fi
+
+XZ_OPT=-9 tar cJf $target-$tag.tar.xz $target
 
