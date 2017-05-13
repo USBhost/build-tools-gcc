@@ -58,6 +58,10 @@ while [[ $# -ge 1 ]]; do
 		"-h"|"--help")
 			help_menu && exit ;;
 		"-l"|"--linaro")
+			# There are a few Linaro branches to consider:
+			# linaro-local/releases/linaro-6.3-2017.05
+			# linaro-local/gcc-6-integration-branch
+			# linaro/gcc-6-branch
 			GCC="linaro-local/releases/linaro-6.3-2017.05" ;;
 		"-u"|"--update")
 			UPDATE=true ;;
