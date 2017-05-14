@@ -36,11 +36,13 @@ function help_menu() {
 	echo -e "${BOLD}USAGE:${RST} bash ${0} <options>\n"
 	echo -e "${BOLD}EXAMPLE:${RST} bash ${0} -u -c -b\n"
 	echo -e "${BOLD}OPTIONAL PARAMETERS:${RST}"
-	echo -e "  -b | --build:       Builds the toolchain"
-	echo -e "  -c | --clean:       Cleans up the last compilation"
-	echo -e "  -d | --download:    Downloads the necessary components to build"
-	echo -e "  -l | --linaro:      Use Linaro's gcc branch instead of GNU's"
-	echo -e "  -u | --update:      Updates the downloaded components\n"
+	echo -e "  -a  | --arm:         Builds targeting arm-linux-gnueabi instead of aarch64-linux-gnu"
+	echo -e "  -b  | --build:       Builds the toolchain"
+	echo -e "  -c  | --clean:       Cleans up the last compilation"
+	echo -e "  -d  | --download:    Downloads the necessary components to build"
+	echo -e "  -l  | --linaro:      Use Linaro's gcc branch instead of GNU's"
+	echo -e "  -nt | --no-tmpfs:    If you don't have a lot of RAM, add this flag"
+	echo -e "  -u  | --update:      Updates the downloaded components\n"
 	echo -e "Download MUST be run before building. No options falls back to just building\n"
 }
 
@@ -49,6 +51,8 @@ function help_menu() {
 
 while [[ $# -ge 1 ]]; do
 	case "${1}" in
+		"-a"|"--arm")
+			target=arm-linux-gnueabi ;;
 		"-b"|"--build")
 			BUILD=true ;;
 		"-c"|"--clean")
@@ -63,6 +67,8 @@ while [[ $# -ge 1 ]]; do
 			# linaro-local/gcc-6-integration-branch
 			# linaro/gcc-6-branch
 			GCC="linaro-local/releases/linaro-6.3-2017.05" ;;
+		"-nt"|"--no-tmpfs")
+			tmpfs="no" ;;
 		"-u"|"--update")
 			UPDATE=true ;;
 	esac
@@ -144,7 +150,11 @@ if [[ ${UPDATE} = true ]] || [[ ${DOWNLOAD} = true ]]; then
 	echo "done updating"
 fi
 
-[[ -z ${BUILD} ]] && exit
+if [[ -z ${BUILD} ]]; then
+	echo "Building was not requested" && help_menu && exit
+elif [[ ! -d gcc ]]; then
+	echo "GCC source is missing! Did you run with --download?" && help_menu && exit
+fi
 
 mkdir -p build-glibc
 mkdir -p build-gcc
@@ -154,10 +164,6 @@ if [ "$tmpfs" == "yes" ]; then
 	sudo mount -t tmpfs -o rw none build-glibc
 	sudo mount -t tmpfs -o rw none build-gcc
 	sudo mount -t tmpfs -o rw none build-binutils
-fi
-
-if [[ ! -d gcc ]]; then
-	help_menu && exit
 fi
 
 cd gcc
@@ -237,5 +243,10 @@ else
 	tag=$(date +%Y%m%d)
 fi
 
-XZ_OPT=-9 tar cJf $target-$tag.tar.xz $target
+if [[ $(grep -i "Ubuntu" /etc/os-release) ]]; then
+	distro=-ubuntu
+elif [[ $(grep -i "Arch" /etc/os-release) ]]; then
+	distro=-arch
+fi
 
+XZ_OPT=-9 tar cJf $target-$tag$distro.tar.xz $target
