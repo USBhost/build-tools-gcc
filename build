@@ -194,7 +194,7 @@ if [[ ${DOWNLOAD} = true ]]; then
         EX=1
     fi
     if [[ ! -e ${GLIBC}.tar.xz ]] && [[ ! -d ${GLIBC} ]]; then
-        wget http://ftp.gnu.org/gnu/glibc/${GBLIC}.tar.xz &
+        wget http://ftp.gnu.org/gnu/glibc/${GLIBC}.tar.xz &
         EX=1
 	fi
     if [[ ! -e isl ]]; then
