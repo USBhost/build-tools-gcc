@@ -1,4 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+###########
+# SOURCES #
+###########
 
 # http://preshing.com/20141119/how-to-build-a-gcc-cross-compiler/ # credits for almost everything
 # http://www.mpfr.org/
@@ -9,244 +13,396 @@
 # https://www.gnu.org/software/libc/
 # https://www.kernel.org/
 # https://git.linaro.org/toolchain/gcc.git # linaro and gnu
-# This script should be able to build most versions (i only tried 4.9 5 and 6/tends to go bad somtimes)
-# How to use.... (UBUNTU 16.04/10 clean install)
-# ./build -h
 
-CONFIGURATION="--disable-multilib --disable-werror"
-target="aarch64-linux-gnu"
-GCC="gcc-6-branch"
+
+#########
+# USAGE #
+#########
+
+# bash build -h
+
+
+#############
+# VARIABLES #
+#############
+
+# Default options, can be edited or modified here OR changed with parameter below
+TARGET="aarch64-linux-gnu"
 ARCH="arm64"
-install="$PWD/$target"
-binutils="binutils-2_28-branch"
-gmp="gmp-6.1.2"
-mpfr="mpfr-3.1.5"
-mpc="mpc-1.0.3"
-isl="master"
-glibc="glibc-2.25"
-tmpfs="yes" # set this to an no if your machin does not have much ram
-job="-j$(cat /proc/cpuinfo | grep -c processor)"
-PATH=$install/bin:$PATH
+GCC="gcc-6-branch"
+TMPFS="yes"
 
-function help_menu() {
-	BOLD="\033[1m"
-	RST="\033[0m"
-	echo -e ""
-	echo -e "${BOLD}OVERVIEW:${RST} Builds an aarch64 gcc toolchain\n"
-	echo -e "${BOLD}USAGE:${RST} bash ${0} <options>\n"
-	echo -e "${BOLD}EXAMPLE:${RST} bash ${0} -u -c -b\n"
-	echo -e "${BOLD}OPTIONAL PARAMETERS:${RST}"
-	echo -e "  -a  | --arm:         Builds targeting arm-linux-gnueabi instead of aarch64-linux-gnu"
-	echo -e "  -b  | --build:       Builds the toolchain"
-	echo -e "  -c  | --clean:       Cleans up the last compilation"
-	echo -e "  -d  | --download:    Downloads the necessary components to build"
-	echo -e "  -l  | --linaro:      Use Linaro's gcc branch instead of GNU's"
-	echo -e "  -nt | --no-tmpfs:    If you don't have a lot of RAM, add this flag"
-	echo -e "  -u  | --update:      Updates the downloaded components\n"
-	echo -e "Download MUST be run before building. No options falls back to just building\n"
+# Other variables
+CONFIGURATION="--disable-multilib --disable-werror"
+BASH_DIR=$( cd $( dirname $( readlink -f "${BASH_SOURCE[0]}" ) ) && pwd )
+INSTALL="${BASH_DIR}/${TARGET}"
+BINUTILS="binutils-2_28-branch"
+GMP="gmp-6.1.2"
+MPFR="mpfr-3.1.5"
+MPC="mpc-1.0.3"
+ISL="master"
+GLIBC="glibc-2.25"
+JOBS="-j$( nproc --all )"
+PATH=${INSTALL}/bin:${PATH}
+
+# Colors
+BOLD="\033[1m"
+RED="\033[01;31m"
+RST="\033[0m"
+YLW="\033[01;33m"
+
+
+#############
+# FUNCTIONS #
+#############
+
+# Prints a formatted header to let the user know what's being done
+function echoText() {
+    echo -e ${RED}
+    echo -e "====$( for i in $( seq ${#1} ); do echo -e "=\c"; done )===="
+    echo -e "==  ${1}  =="
+    echo -e "====$( for i in $( seq ${#1} ); do echo -e "=\c"; done )===="
+    echo -e ${RST}
 }
 
-# Get parameters
+# Prints an error in bold red
+function reportError() {
+    echo -e ""
+    echo -e ${RED}"${1}"${RST}
+    if [[ -z ${2} ]]; then
+        echo -e ""
+    fi
+}
+
+# Prints a warning in bold yellow
+function reportWarning() {
+    echo -e ""
+    echo -e ${YLW}"${1}"${RST}
+    if [[ -z ${2} ]]; then
+        echo -e ""
+    fi
+}
+
+# Formats the time for the end
+function format_time() {
+    MINS=$(((${2}-${1})/60))
+    SECS=$(((${2}-${1})%60))
+    if [[ ${MINS} -ge 60 ]]; then
+        HOURS=$((${MINS}/60))
+        MINS=$((${MINS}%60))
+    fi
+
+    if [[ ${HOURS} -eq 1 ]]; then
+        TIME_STRING+="1 HOUR, "
+    elif [[ ${HOURS} -ge 2 ]]; then
+        TIME_STRING+="${HOURS} HOURS, "
+    fi
+
+    if [[ ${MINS} -eq 1 ]]; then
+        TIME_STRING+="1 MINUTE"
+    else
+        TIME_STRING+="${MINS} MINUTES"
+    fi
+
+    if [[ ${SECS} -eq 1 && -n ${HOURS} ]]; then
+        TIME_STRING+=", AND 1 SECOND"
+    elif [[ ${SECS} -eq 1 && -z ${HOURS} ]]; then
+        TIME_STRING+=" AND 1 SECOND"
+    elif [[ ${SECS} -ne 1 && -n ${HOURS} ]]; then
+        TIME_STRING+=", AND ${SECS} SECONDS"
+    elif [[ ${SECS} -ne 1 && -z ${HOURS} ]]; then
+        TIME_STRING+=" AND ${SECS} SECONDS"
+    fi
+
+    echo ${TIME_STRING}
+}
+
+# Help menu function
+function help_menu() {
+    echo -e "${BOLD}OVERVIEW:${RST} Builds an aarch64 gcc toolchain\n"
+    echo -e "${BOLD}USAGE:${RST} bash ${0} <options>\n"
+    echo -e "${BOLD}EXAMPLE:${RST} bash ${0} -u -c -b\n"
+    echo -e "${BOLD}OPTIONAL PARAMETERS:${RST}"
+    echo -e "  -a  | --arm:         Builds targeting arm-linux-gnueabi instead of aarch64-linux-gnu"
+    echo -e "  -b  | --build:       Builds the toolchain"
+    echo -e "  -c  | --clean:       Cleans up the last compilation"
+    echo -e "  -d  | --download:    Downloads the necessary components to build"
+    echo -e "  -l  | --linaro:      Use Linaro's gcc branch instead of GNU's"
+    echo -e "  -nt | --no-tmpfs:    If you don't have a lot of RAM, add this flag"
+    echo -e "  -u  | --update:      Updates the downloaded components\n"
+    echo -e "Download MUST be run before building. No options falls back to just building\n"
+    exit
+}
+
+
+##############
+# Parameters #
+##############
+
+# If there are no parameters, assume user just wants to build
 [[ $? = 0 ]] && BUILD=true
 
+# Otherwise, filter and set flags
 while [[ $# -ge 1 ]]; do
-	case "${1}" in
-		"-a"|"--arm")
-			target=arm-linux-gnueabi ;;
-		"-b"|"--build")
-			BUILD=true ;;
-		"-c"|"--clean")
-			CLEAN=true ;;
-		"-d"|"--download")
-			DOWNLOAD=true ;;
-		"-h"|"--help")
-			help_menu && exit ;;
-		"-l"|"--linaro")
-			# There are a few Linaro branches to consider:
-			# linaro-local/releases/linaro-6.3-2017.05
-			# linaro-local/gcc-6-integration-branch
-			# linaro/gcc-6-branch
-			GCC="linaro-local/releases/linaro-6.3-2017.05" ;;
-		"-nt"|"--no-tmpfs")
-			tmpfs="no" ;;
-		"-u"|"--update")
-			UPDATE=true ;;
-	esac
+    case "${1}" in
+        "-a"|"--arm")
+            TARGET=arm-linux-gnueabi
+            ARCH=arm ;;
+        "-b"|"--build")
+            BUILD=true ;;
+        "-c"|"--clean")
+            CLEAN=true ;;
+        "-d"|"--download")
+            DOWNLOAD=true ;;
+        "-h"|"--help")
+            echo; help_menu ;;
+        "-l"|"--linaro")
+            # There are a few Linaro branches to consider:
+            # linaro-local/releases/linaro-6.3-2017.05
+            # linaro-local/gcc-6-integration-branch
+            # linaro/gcc-6-branch
+            GCC="linaro-local/releases/linaro-6.3-2017.05" ;;
+        "-nt"|"--no-tmpfs")
+            TMPFS="no" ;;
+        "-u"|"--update")
+            UPDATE=true ;;
+    esac
 
-	shift
+    shift
 done
 
+
+#######################
+# DOWNLOADING SOURCES #
+#######################
+
+START=$( date +%s )
+
 if [[ ${DOWNLOAD} = true ]]; then
-	if [ ! -e $mpfr.tar.xz ] && [ ! -d $mpfr ]; then
-		wget http://www.mpfr.org/mpfr-current/$mpfr.tar.xz &
-		EX=1
+    echoText "DOWNLOADING SOURCES"
+
+    if [[ ! -e ${MPFR}.tar.xz ]] && [[ ! -d ${MPFR} ]]; then
+        wget http://www.mpfr.org/mpfr-current/${MPFR}.tar.xz &
+        EX=1
+    fi
+    if [[ ! -e ${GMP}.tar.xz ]] && [[ ! -d ${GMP} ]]; then
+        wget ftp://ftp.gnu.org/gnu/gmp/${GMP}.tar.xz &
+        EX=1
+    fi
+    if [[ ! -e ${MPC}.tar.gz ]] && [[ ! -d ${MPC} ]]; then
+        wget ftp://ftp.gnu.org/gnu/mpc/${MPC}.tar.gz &
+        EX=1
+    fi
+    if [[ ! -e ${GLIBC}.tar.xz ]] && [[ ! -d ${GLIBC} ]]; then
+        wget http://ftp.gnu.org/gnu/glibc/${GBLIC}.tar.xz &
+        EX=1
 	fi
-	if [ ! -e $gmp.tar.xz ] && [ ! -d $gmp ]; then
-		wget ftp://ftp.gnu.org/gnu/gmp/$gmp.tar.xz &
-		EX=1
+    if [[ ! -e isl ]]; then
+        git clone git://repo.or.cz/isl.git -b ${ISL} &
+    fi
+    if [[ ! -e binutils ]]; then
+        git clone https://git.linaro.org/toolchain/binutils-gdb.git binutils -b ${BINUTILS} &
+    fi
+    if [[ ! -e gcc ]]; then
+        git clone https://git.linaro.org/toolchain/gcc.git &
+    fi
+    if [[ ! -e linux ]]; then
+        git clone https://github.com/torvalds/linux.git &
 	fi
-	if [ ! -e $mpc.tar.gz ] && [ ! -d $mpc ]; then
-		wget ftp://ftp.gnu.org/gnu/mpc/$mpc.tar.gz &
-		EX=1
-	fi
-	if [ ! -e $glibc.tar.xz ] && [ ! -d $glibc ]; then
-		wget http://ftp.gnu.org/gnu/glibc/$glibc.tar.xz &
-		EX=1
-	fi
-	if [ ! -e isl ]; then
-		git clone git://repo.or.cz/isl.git -b $isl &
-	fi
-	if [ ! -e binutils ]; then
-		git clone https://git.linaro.org/toolchain/binutils-gdb.git binutils -b $binutils &
-	fi
-	if [ ! -e gcc ]; then
-		git clone https://git.linaro.org/toolchain/gcc.git &
-	fi
-	if [ ! -e linux ]; then
-		git clone https://github.com/torvalds/linux.git &
-	fi
-	for job in `jobs -p` 
-	do
-		wait $job 
-	done
-	if [ "$EX" == "1" ]; then
-		for f in *.tar*; do tar xfk $f; done
-		rm *.tar*
-	fi
-	if [ -d isl ]; then
-		cd isl && ./autogen.sh && cd ..
-	fi
-	echo "done downloading"
-fi
-if [[ ${CLEAN} = true ]]; then
-	rm -rf build-glibc/*
-	rm -rf build-gcc/*
-	rm -rf build-binutils/*
-	rm -f $target-*.*
-	rm -rf $target
-	echo "done cleaning up"
-fi
-if [[ ${UPDATE} = true ]] || [[ ${DOWNLOAD} = true ]]; then
-	cd isl
-		git remote update
-		git checkout $isl
-		git merge origin/$isl
-		./autogen.sh
-	cd ..
-	cd binutils
-		git remote update
-		git checkout $binutils
-		git merge origin/$binutils
-	cd ..
-	cd gcc
-		git remote update
-		git checkout $GCC
-		git merge origin/$GCC
-	cd ..
-	cd linux
-		git remote update
-		git merge origin/master
-	cd ..
-	echo "done updating"
+    for JOB in $( jobs -p ); do
+	    wait ${JOB}
+    done
+    if [[ ${EX} = 1 ]]; then
+        for F in *.tar*; do tar xfk ${F}; done
+        rm *.tar*
+    fi
+    if [[ -d isl ]]; then
+        cd isl && ./autogen.sh && cd ..
+    fi
 fi
 
+
+############
+# CLEANING #
+############
+
+if [[ ${CLEAN} = true ]]; then
+    echoText "CLEANING UP"
+
+    rm -rf build-glibc/*
+    rm -rf build-gcc/*
+    rm -rf build-binutils/*
+    rm -rf ${TARGET}-*.*
+    rm -rf ${TARGET}
+    echo "Clean up successful!"
+fi
+
+
+############
+# UPDATING #
+############
+
+if [[ ${UPDATE} = true ]] || [[ ${DOWNLOAD} = true ]]; then
+    echoText "UPDATING SOURCES"
+
+    cd isl
+    git remote update
+    git checkout ${ISL}
+    git merge origin/${ISL}
+    ./autogen.sh
+
+    cd ../binutils
+    git remote update
+    git checkout ${BINUTILS}
+    git merge origin/${BINUTILS}
+
+    cd ../gcc
+    git remote update
+    git checkout ${GCC}
+    git merge origin/${GCC}
+
+    cd ../linux
+    git remote update
+    git merge origin/master
+
+    cd ..
+fi
+
+
+###############
+# PREPARATION #
+###############
+
 if [[ -z ${BUILD} ]]; then
-	echo "Building was not requested" && help_menu && exit
+    reportError "Building was not requested"
+    help_menu
 elif [[ ! -d gcc ]]; then
-	echo "GCC source is missing! Did you run with --download?" && help_menu && exit
+    reportError "GCC source is missing! Did you run with --download?"
+    help_menu
 fi
 
 mkdir -p build-glibc
 mkdir -p build-gcc
 mkdir -p build-binutils
 
-if [ "$tmpfs" == "yes" ]; then
-	sudo mount -t tmpfs -o rw none build-glibc
-	sudo mount -t tmpfs -o rw none build-gcc
-	sudo mount -t tmpfs -o rw none build-binutils
+if [[ ${TMPFS} = "yes" ]]; then
+    sudo mount -t tmpfs -o rw none build-glibc
+    sudo mount -t tmpfs -o rw none build-gcc
+    sudo mount -t tmpfs -o rw none build-binutils
 fi
 
 cd gcc
-	ln -s -f ../$mpfr mpfr
-	ln -s -f ../$gmp gmp
-	ln -s -f ../$mpc mpc
-	ln -s -f ../isl isl
+ln -s -f ../${MPFR} mpfr
+ln -s -f ../${GMP} gmp
+ln -s -f ../${MPC} mpc
+ln -s -f ../isl isl
 cd ..
 
-echo "stage: 1"
+
+############
+# BUILDING #
+############
+
+echoText "BUILDING BINUTILS"
 cd build-binutils
-	../binutils/configure $CONFIGURATION --target=$target --prefix=$install --disable-gdb
-	make $job || exit 1
-	make install $job || exit 1
-cd ..
+../binutils/configure ${CONFIGURATION} --target=${TARGET} --prefix=${INSTALL} --disable-gdb
+make ${JOBS} || exit 1
+make install ${JOBS} || exit 1
 
-echo "stage: 2"
-cd linux
-	make ARCH=$ARCH INSTALL_HDR_PATH=$install/$target headers_install $job || exit 1
-cd ..
 
-echo "stage: 3"
-cd build-gcc
-	../gcc/configure $CONFIGURATION --enable-languages=c --target=$target --prefix=$install
-	make all-gcc $job || exit 1
-	make install-gcc $job || exit 1
-	if [ "$ARCH" == "x86_64" ]; then
-		make all-target-libgcc $job || exit 1
-		make install-target-libgcc $job || exit 1
-	fi
-cd ..
+echoText "MAKING LINUX HEADERS"
+cd ../linux
+make ARCH=${ARCH} INSTALL_HDR_PATH=${INSTALL}/${TARGET} headers_install ${JOBS} || exit 1
 
-echo "stage: 4"
-cd build-glibc
-	../$glibc/configure --prefix=$install/$target --build=$MACHTYPE --host=$target --target=$target --with-headers=$install/$target/include $CONFIGURATION libc_cv_forced_unwind=yes
-	make install-bootstrap-headers=yes install-headers $job || exit 1
-	make csu/subdir_lib $job || exit 1
-	install csu/crt1.o csu/crti.o csu/crtn.o $install/$target/lib
-	$target-gcc -nostdlib -nostartfiles -shared -x c /dev/null -o $install/$target/lib/libc.so
-	touch $install/$target/include/gnu/stubs.h
-	if [ "$ARCH" == "x86_64" ]; then
-		make $job || exit 1
-		make install $job || exit 1
-	fi
-cd ..
 
-if [ "$ARCH" != "x86_64" ]; then
-	echo "stage: 4.1"
-	cd build-gcc
-		make all-target-libgcc $job || exit 1
-		make install-target-libgcc $job || exit 1
-	cd ..
-
-	echo "stage: 4.2"
-	cd build-glibc
-		make $job || exit 1
-		make install $job || exit 1
-	cd ..
+echoText "MAKING GCC"
+cd ../build-gcc
+../gcc/configure ${CONFIGURATION} --enable-languages=c --target=${TARGET} --prefix=${INSTALL}
+make all-gcc ${JOBS} || exit 1
+make install-gcc ${JOBS} || exit 1
+if [[ ${ARCH} = "x86_64" ]]; then
+    make all-target-libgcc ${JOBS} || exit 1
+    make install-target-libgcc ${JOBS} || exit 1
 fi
 
-echo "stage: 5"
-cd build-gcc
-	make all $job || exit 1
-	make install $job || exit 1
+
+echoText "MAKING GLIBC"
+cd ../build-glibc
+../${GLIBC}/configure --prefix=${INSTALL}/${TARGET} --build=${MACHTYPE} --host=${TARGET} \
+                      --target=${TARGET} --with-headers=${INSTALL}/${TARGET}/include \
+                      ${CONFIGURATION} libc_cv_forced_unwind=yes
+make install-bootstrap-headers=yes install-headers ${JOBS} || exit 1
+make csu/subdir_lib ${JOBS} || exit 1
+install csu/crt1.o csu/crti.o csu/crtn.o ${INSTALL}/${TARGET}/lib
+${TARGET}-gcc -nostdlib -nostartfiles -shared -x c /dev/null -o ${INSTALL}/${TARGET}/lib/libc.so
+touch ${INSTALL}/${TARGET}/include/gnu/stubs.h
+if [[ ${ARCH} = "x86_64" ]]; then
+    make ${JOBS} || exit 1
+    make install ${JOBS} || exit 1
+fi
+
+if [[ ${ARCH} != "x86_64" ]]; then
+    cd ../build-gcc
+    make all-target-libgcc ${JOBS} || exit 1
+    make install-target-libgcc ${JOBS} || exit 1
+
+	cd ../build-glibc
+    make ${JOBS} || exit 1
+    make install ${JOBS} || exit 1
+fi
+
+
+echoText "INSTALLING GCC"
+cd ../build-gcc
+make all ${JOBS} || exit 1
+make install ${JOBS} || exit 1
 cd ..
 
-echo "stage: done"
-if [ "$tmpfs" == "yes" ]; then
+
+if [[ ${TMPFS} = yes ]]; then
 	sudo umount -f build-glibc
 	sudo umount -f build-gcc
 	sudo umount -f build-binutils
 fi
 
-if [[ $(echo ${GCC} | grep linaro) ]]; then
-	tag=linaro-$(date +%Y%m%d)
+
+#############
+# PACKAGING #
+#############
+
+if [[ $( echo ${GCC} | grep linaro ) ]]; then
+	TAG=linaro-$( TZ=UTC date +%Y%m%d )
 else
-	tag=$(date +%Y%m%d)
+	TAG=$( TZ=UTC date +%Y%m%d ) 
 fi
 
-if [[ $(grep -i "Ubuntu" /etc/os-release) ]]; then
-	distro=-ubuntu
-elif [[ $(grep -i "Arch" /etc/os-release) ]]; then
-	distro=-arch
+if [[ $( grep -i "Ubuntu" /etc/os-release ) ]]; then
+    DISTRO=-ubuntu
+elif [[ $( grep -i "Arch" /etc/os-release ) ]]; then
+	DISTRO=-arch
 fi
 
-XZ_OPT=-9 tar cJf $target-$tag$distro.tar.xz $target
+echoText "PACKAGING TOOLCHAIN"
+
+echo "Target file: ${TARGET}-${TAG}${DISTRO}.tar.xz"
+echo "Packaging..."
+XZ_OPT=-9 tar cJf ${TARGET}-${TAG}${DISTRO}.tar.xz ${TARGET}
+
+
+#################
+# ENDING OUTPUT #
+#################
+
+END=$( date +%s )
+
+if [[ -e ${TARGET}-${TAG}${DISTRO}.tar.xz ]]; then
+    echoText "BUILD SUCESSFUL"
+    echo -e "${BOLD}Script duration:${RST} $( format_time ${START} ${END} )"
+    echo -e "${BOLD}File location:${RST} ${TARGET}-${TAG}${DISTRO}.tar.xz"
+    echo -e "${BOLD}File size:${RST} $( du -h ${TARGET}-${TAG}${DISTRO}.tar.xz | awk '{print $1}' )"
+else
+    echoText "BUILD FAILED"
+fi
+
+# Alert to script end
+echo -e "\a"
