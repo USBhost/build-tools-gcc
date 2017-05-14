@@ -23,19 +23,19 @@ cd build-tools-gcc
 bash build -h
 ```
 
-After that, read the parameters to understand the script. A full explanation of
-the parameters is below.
+The printout will show you how to run the script. A fuller explananation of the
+parameters is below
 
 
-## Paramaters
+## Parameters
 
-NOTE: Multiple can and probably should be used. See examples below.
+NOTE: Multiple parameters can and will almost always be used. See examples below.
 
-+ ```-a | --arm:``` This allows the user to build an arm toolchain, instead of an arm toolchain
++ ```-a | --arm:``` This allows the user to build an arm toolchain, instead of an arm64 toolchain.
 + ```-b | --build:``` Build the toolchain. This parameter MUST be added for the toolchain to build if you add any parameters. Running just ```bash build``` will use this.
 + ```-c | --clean:``` Clean up from a previous build. Do this after the first download after every build.
 + ```-d | --download:``` Downloads the necessary components to compile. This MUST be added before building for the first time.
-+ ```-h | --help:``` Run the help menu and exit.
++ ```-h | --help:``` Run the help menu then exits. Use this whenever you forget how to run the script.
 + ```-l | --linaro:``` Build a Linaro toolchain from the latest release branch, instead of the standard GNU source.
 + ```-nt | --no-tmpfs:``` Do not mount the build directories on tmpfs (use this if you don't have a lot of RAM)
 + ```-u | --update:``` This will update the git repos that were downloaded. Recommended before any build.
@@ -44,9 +44,11 @@ Example commands:
 
 ```bash
 # Build a Linaro toolchain for the first time
+# Download components, checkout Linaro, then build
 bash build -d -l -b
 
 # Build a GNU toolchain after a few compilations
+# Update sources, clean previous compilation, then build
 bash build -u -c -b
 ```
 
@@ -65,16 +67,25 @@ tar -xvf --strip-components=1 <toolchain_name>.tar.xz
 
 After that, point your cross compiler to the proper file and compile!
 
+An easy shortcut for kernels is ```export CROSS_COMPILE=$(pwd)/bin/aarch64-linux-gnu-```
+Subsititue ```arm-gnu-eabi-``` if compiling for arm.
+
 
 ## Pull requests/issues
 
 If you have any issues with this script, feel free to open an issue!
 
-Pull requests are more than welcome as well.
+Pull requests are more than welcome as well. For pull requests, I will only
+accept a particular coding style:
+
++ All variables are uppercased and use curly braces: ```${VARIABLE}``` instead of ```$variable```
++ Four spaces for indents
++ All conditions must be one line to start: ```if [[ conditions ]]; then```
++ Double brackets and single equal sign for string comparisons with if statements: ```if [[ ${VARIABLE} = "yes" ]]; then```
 
 
 ## Credits/thanks
 
 + [USBHost](https://github.com/USBhost): For the initial script
 + [frap129](https://github.com/frap129): For some modifications to update the script/components
-+ [MSFJarvis](https://github.com/MSFJarvis): For testing the arm option
++ [MSF-Jarvis](https://github.com/MSF-Jarvis): For testing the arm option
