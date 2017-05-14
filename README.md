@@ -65,10 +65,17 @@ directory of your choosing and run the following command:
 tar -xvf --strip-components=1 <toolchain_name>.tar.xz
 ```
 
-After that, point your cross compiler to the proper file and compile!
+After that, point your cross compiler to the proper file and compile! This is
+an easy shortcut for kernels (when run in the directory you extracted the
+toolchain in):
 
-An easy shortcut for kernels is ```export CROSS_COMPILE=$(pwd)/bin/aarch64-linux-gnu-```
-Subsititue ```arm-gnu-eabi-``` if compiling for arm.
+```bash
+# for arm64
+export CROSS_COMPILE=$(pwd)/bin/aarch64-linux-gnu-
+
+# for arm
+export CROSS_COMPILE=$(pwd)/bin/arm-linux-gnueabi-
+```
 
 
 ## Pull requests/issues
