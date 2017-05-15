@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+
+####################
+# HELPER FUNCTIONS #
+####################
+
+# Prints a formatted header to let the user know what's being done
+function echoText() {
+    echo -e ${RED}
+    echo -e "====$( for i in $( seq ${#1} ); do echo -e "=\c"; done )===="
+    echo -e "==  ${1}  =="
+    echo -e "====$( for i in $( seq ${#1} ); do echo -e "=\c"; done )===="
+    echo -e ${RST}
+}
+
+# Prints an error in bold red
+function reportError() {
+    echo -e ""
+    echo -e ${RED}"${1}"${RST}
+    if [[ -z ${2} ]]; then
+        echo -e ""
+    fi
+}
+
+# Prints a warning in bold yellow
+function reportWarning() {
+    echo -e ""
+    echo -e ${YLW}"${1}"${RST}
+    if [[ -z ${2} ]]; then
+        echo -e ""
+    fi
+}
+
+# Formats the time for the end
+function format_time() {
+    MINS=$(((${2}-${1})/60))
+    SECS=$(((${2}-${1})%60))
+    if [[ ${MINS} -ge 60 ]]; then
+        HOURS=$((${MINS}/60))
+        MINS=$((${MINS}%60))
+    fi
+
+    if [[ ${HOURS} -eq 1 ]]; then
+        TIME_STRING+="1 HOUR, "
+    elif [[ ${HOURS} -ge 2 ]]; then
+        TIME_STRING+="${HOURS} HOURS, "
+    fi
+
+    if [[ ${MINS} -eq 1 ]]; then
+        TIME_STRING+="1 MINUTE"
+    else
+        TIME_STRING+="${MINS} MINUTES"
+    fi
+
+    if [[ ${SECS} -eq 1 && -n ${HOURS} ]]; then
+        TIME_STRING+=", AND 1 SECOND"
+    elif [[ ${SECS} -eq 1 && -z ${HOURS} ]]; then
+        TIME_STRING+=" AND 1 SECOND"
+    elif [[ ${SECS} -ne 1 && -n ${HOURS} ]]; then
+        TIME_STRING+=", AND ${SECS} SECONDS"
+    elif [[ ${SECS} -ne 1 && -z ${HOURS} ]]; then
+        TIME_STRING+=" AND ${SECS} SECONDS"
+    fi
+
+    echo ${TIME_STRING}
+}
+
+# Help menu function
+function help_menu() {
+    echo -e "${BOLD}OVERVIEW:${RST} Builds an aarch64 gcc toolchain\n"
+    echo -e "${BOLD}USAGE:${RST} bash ${0} <options>\n"
+    echo -e "${BOLD}EXAMPLE:${RST} bash ${0} -u -c -b\n"
+    echo -e "${BOLD}OPTIONAL PARAMETERS:${RST}"
+    echo -e "  -a  | --arm:         Builds targeting arm-linux-gnueabi instead of aarch64-linux-gnu"
+    echo -e "  -b  | --build:       Builds the toolchain"
+    echo -e "  -c  | --clean:       Cleans up the last compilation"
+    echo -e "  -d  | --download:    Downloads the necessary components to build"
+    echo -e "  -l  | --linaro:      Use Linaro's gcc branch instead of GNU's"
+    echo -e "  -nt | --no-tmpfs:    If you don't have a lot of RAM, add this flag"
+    echo -e "  -u  | --update:      Updates the downloaded components\n"
+    echo -e "Download MUST be run before building. No options falls back to just building\n"
+    exit
+}
+
