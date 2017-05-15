@@ -62,7 +62,7 @@ Once it is done building, you will see a tar.xz file. Move that into the
 directory of your choosing and run the following command:
 
 ```bash
-tar -xvf --strip-components=1 <toolchain_name>.tar.xz
+tar -xvf <toolchain_name>.tar.xz --strip-components=1
 ```
 
 After that, point your cross compiler to the proper file and compile! This is
@@ -82,13 +82,13 @@ export CROSS_COMPILE=$(pwd)/bin/arm-linux-gnueabi-
 
 If you have any issues with this script, feel free to open an issue!
 
-Pull requests are more than welcome as well. For pull requests, I will only
+Pull requests are more than welcome as well. However, I will only
 accept a particular coding style:
 
 + All variables are uppercased and use curly braces: ```${VARIABLE}``` instead of ```$variable```
 + Four spaces for indents
 + All conditions must be one line to start: ```if [[ conditions ]]; then```
-+ Double brackets and single equal sign for string comparisons with if statements: ```if [[ ${VARIABLE} = "yes" ]]; then```
++ Double brackets and single equal sign for string comparisons in if blocks: ```if [[ ${VARIABLE} = "yes" ]]; then```
 
 
 ## Credits/thanks
