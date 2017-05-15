@@ -70,8 +70,8 @@ source ${BASH_DIR}/functions
 while [[ $# -ge 1 ]]; do
     case "${1}" in
         "-a"|"--arm")
-            TARGET=arm-linux-gnueabi
-            ARCH=arm ;;
+            TARGET="arm-linux-gnueabi"
+            ARCH="arm" ;;
         "-b"|"--build")
             BUILD=true ;;
         "-c"|"--clean")
@@ -156,8 +156,8 @@ if [[ ${CLEAN} = true ]]; then
     rm -rf build-glibc/*
     rm -rf build-gcc/*
     rm -rf build-binutils/*
-    rm -rf ${TARGET}-*.*
-    rm -rf ${TARGET}
+    rm -rf *.tar.xz
+    rm -rf *linux-gnu*
     echo "Clean up successful!"
 fi
 
