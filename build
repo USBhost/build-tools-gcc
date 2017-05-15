@@ -64,7 +64,7 @@ source ${BASH_DIR}/functions
 ##############
 
 # If there are no parameters, assume user just wants to build
-[[ $? = 0 ]] && BUILD=true
+[[ $# -eq 0 ]] && BUILD=true
 
 # Otherwise, filter and set flags
 while [[ $# -ge 1 ]]; do
@@ -198,8 +198,7 @@ fi
 ###############
 
 if [[ -z ${BUILD} ]]; then
-    reportError "Building was not requested"
-    help_menu
+    reportWarning "Building was not requested, ending script!" && exit
 elif [[ ! -d gcc ]]; then
     reportError "GCC source is missing! Did you run with --download?"
     help_menu
