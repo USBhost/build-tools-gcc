@@ -4,6 +4,12 @@
 # HELPER FUNCTIONS #
 ####################
 
+# Colors
+BOLD="\033[1m"
+RED="\033[01;31m"
+RST="\033[0m"
+YLW="\033[01;33m"
+
 # Prints a formatted header to let the user know what's being done
 function echoText() {
     echo -e ${RED}

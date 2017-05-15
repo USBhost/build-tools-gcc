@@ -23,45 +23,22 @@
 
 
 #############
-# VARIABLES #
-#############
-
-# Default options, can be edited or modified here OR changed with parameter below
-TARGET="aarch64-linux-gnu"
-ARCH="arm64"
-GCC="gcc-6-branch"
-TMPFS="yes"
-
-# Other variables
-CONFIGURATION="--disable-multilib --disable-werror"
-BASH_DIR=$( cd $( dirname $( readlink -f "${BASH_SOURCE[0]}" ) ) && pwd )
-INSTALL="${BASH_DIR}/${TARGET}"
-BINUTILS="binutils-2_28-branch"
-GMP="gmp-6.1.2"
-MPFR="mpfr-3.1.5"
-MPC="mpc-1.0.3"
-ISL="master"
-GLIBC="glibc-2.25"
-JOBS="-j$( nproc --all )"
-PATH=${INSTALL}/bin:${PATH}
-
-# Colors
-BOLD="\033[1m"
-RED="\033[01;31m"
-RST="\033[0m"
-YLW="\033[01;33m"
-
-
-#############
 # FUNCTIONS #
 #############
 
+BASH_DIR=$( cd $( dirname $( readlink -f "${BASH_SOURCE[0]}" ) ) && pwd )
 source ${BASH_DIR}/functions
 
 
 ##############
 # Parameters #
 ##############
+
+# Default options, can be edited or modified here OR changed with parameter below
+TARGET="aarch64-linux-gnu"
+ARCH="arm64"
+GCC="gcc-6-branch"
+TMPFS="yes"
 
 # If there are no parameters, assume user just wants to build
 [[ $# -eq 0 ]] && BUILD=true
@@ -94,6 +71,25 @@ while [[ $# -ge 1 ]]; do
 
     shift
 done
+
+
+#############
+# VARIABLES #
+#############
+
+# Configuration variables
+CONFIGURATION="--disable-multilib --disable-werror"
+INSTALL="${BASH_DIR}/${TARGET}"
+PATH=${INSTALL}/bin:${PATH}
+JOBS="-j$( nproc --all )"
+
+# Binary versions
+BINUTILS="binutils-2_28-branch"
+GMP="gmp-6.1.2"
+MPFR="mpfr-3.1.5"
+MPC="mpc-1.0.3"
+ISL="master"
+GLIBC="glibc-2.25"
 
 
 #######################
