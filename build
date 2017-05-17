@@ -224,6 +224,9 @@ mkdir -p build-gcc
 mkdir -p build-binutils
 
 if [[ ${TMPFS} = "yes" ]]; then
+    if [[ check_sudo ]]; then
+        echo "Please enter your password at the following prompt. It is needed to that we can mount some folders on tmpfs";
+    fi
     sudo mount -t tmpfs -o rw none build-glibc
     sudo mount -t tmpfs -o rw none build-gcc
     sudo mount -t tmpfs -o rw none build-binutils

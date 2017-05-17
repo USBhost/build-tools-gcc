@@ -101,3 +101,7 @@ function help_menu() {
     exit
 }
 
+# Check if user needs to enter sudo password or not
+function check_sudo() {
+    sudo -n true 2>/dev/null
+}
