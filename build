@@ -56,7 +56,7 @@ source ${BASH_DIR}/functions
 # Default options, can be edited or modified here OR changed with parameter below
 TARGET="aarch64-linux-gnu"
 ARCH="arm64"
-GCC="gcc-6-branch"
+GCC="gcc-7-branch"
 TMPFS="yes"
 COMPRESSION="xz"
 
@@ -85,7 +85,7 @@ while [[ $# -ge 1 ]]; do
             # linaro-local/releases/linaro-6.3-2017.05
             # linaro-local/gcc-6-integration-branch
             # linaro/gcc-6-branch
-            GCC="linaro-local/releases/linaro-6.3-2017.05" ;;
+            GCC="linaro-local/releases/linaro-7.1-2017.05" ;;
         "-nt"|"--no-tmpfs")
             TMPFS="no" ;;
         "-u"|"--update")
