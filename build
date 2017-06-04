@@ -327,7 +327,7 @@ fi
 if [[ $( grep -i "Ubuntu" /etc/os-release ) ]]; then
     DISTRO=-ubuntu
 elif [[ $( grep -i "Arch" /etc/os-release ) ]]; then
-	DISTRO=-arch
+    DISTRO=-arch
 fi
 
 echoText "PACKAGING TOOLCHAIN"
