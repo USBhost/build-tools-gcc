@@ -222,7 +222,7 @@ fi
 if [[ -z ${BUILD} ]]; then
     reportWarning "Building was not requested, ending script!" && exit
 elif [[ ! -d gcc ]]; then
-    reportError "GCC source is missing! Did you run with --download?"
+    reportError "GCC source is missing! Did you run with --download or -d ?"
     help_menu
 fi
 
@@ -232,7 +232,7 @@ mkdir -p build-binutils
 
 if [[ ${TMPFS} = "yes" ]]; then
     if [[ check_sudo ]]; then
-        echo "Please enter your password at the following prompt. It is needed to that we can mount some folders on tmpfs";
+        echo "Please enter your password at the following prompt. It is needed so we can mount some folders on tmpfs.";
     fi
     sudo mount -t tmpfs -o rw none build-glibc
     sudo mount -t tmpfs -o rw none build-gcc
