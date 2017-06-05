@@ -58,6 +58,7 @@ TARGET="aarch64-linux-gnu"
 ARCH="arm64"
 GCC="gcc-6-branch"
 TMPFS="yes"
+COMPRESSION="xz"
 
 # If there are no parameters, assume user just wants to build
 [[ $# -eq 0 ]] && BUILD=true
@@ -74,6 +75,9 @@ while [[ $# -ge 1 ]]; do
             CLEAN=true ;;
         "-d"|"--download")
             DOWNLOAD=true ;;
+        "-g"|"--gz")
+	    COMPRESSION="gz"
+            COMPRESS_GZIP=true ;;
         "-h"|"--help")
             echo; help_menu ;;
         "-l"|"--linaro")
@@ -86,6 +90,7 @@ while [[ $# -ge 1 ]]; do
             TMPFS="no" ;;
         "-u"|"--update")
             UPDATE=true ;;
+
     esac
 
     shift
@@ -171,9 +176,16 @@ if [[ ${CLEAN} = true ]]; then
     rm -rf build-glibc/*
     rm -rf build-gcc/*
     rm -rf build-binutils/*
-    rm -rf *.tar.xz
+    rm -rf *.tar.${COMPRESSION}
     rm -rf *linux-gnu*
-    echo "Clean up successful!"
+    if [[ "$( ls -A build-glibc )" ]] || [[ "$( ls -A build-gcc )" ]] || [[ "$( ls -A build-binutils )" ]] || [[ -f *.tar.${COMPRESSION} ]] || [[ -f *linux-gnu* ]]; then
+        echo "Clean up failed! Aborting. Try checking that you have proper permissions to delete files."
+        exit
+
+    else
+        echo "Clean up successful!"
+
+    fi
 fi
 
 
@@ -215,7 +227,7 @@ fi
 if [[ -z ${BUILD} ]]; then
     reportWarning "Building was not requested, ending script!" && exit
 elif [[ ! -d gcc ]]; then
-    reportError "GCC source is missing! Did you run with --download?"
+    reportError "GCC source is missing! Did you run with --download or -d ?"
     help_menu
 fi
 
@@ -225,7 +237,7 @@ mkdir -p build-binutils
 
 if [[ ${TMPFS} = "yes" ]]; then
     if [[ check_sudo ]]; then
-        echo "Please enter your password at the following prompt. It is needed to that we can mount some folders on tmpfs";
+        echo "Please enter your password at the following prompt. It is needed so we can mount some folders on tmpfs.";
     fi
     sudo mount -t tmpfs -o rw none build-glibc
     sudo mount -t tmpfs -o rw none build-gcc
@@ -320,15 +332,20 @@ fi
 if [[ $( grep -i "Ubuntu" /etc/os-release ) ]]; then
     DISTRO=-ubuntu
 elif [[ $( grep -i "Arch" /etc/os-release ) ]]; then
-	DISTRO=-arch
+    DISTRO=-arch
 fi
 
 echoText "PACKAGING TOOLCHAIN"
 
-echo "Target file: ${TARGET}-${TAG}${DISTRO}.tar.xz"
-echo "Packaging..."
-XZ_OPT=-9 tar cJf ${TARGET}-${TAG}${DISTRO}.tar.xz ${TARGET}
+echo "Target file: ${TARGET}-${TAG}${DISTRO}.tar.${COMPRESSION}"
 
+if [[ ${COMPRESS_GZIP} = true ]]; then
+    echo "Packaging with GZIP..."
+    GZ_OPT=-9 tar -zcf ${TARGET}-${TAG}${DISTRO}.tar.${COMPRESSION} ${TARGET}
+else
+    echo "Packaging with XZ..."
+    XZ_OPT=-9 tar -Jcf ${TARGET}-${TAG}${DISTRO}.tar.${COMPRESSION} ${TARGET}
+fi
 
 #################
 # ENDING OUTPUT #
@@ -336,11 +353,11 @@ XZ_OPT=-9 tar cJf ${TARGET}-${TAG}${DISTRO}.tar.xz ${TARGET}
 
 END=$( date +%s )
 
-if [[ -e ${TARGET}-${TAG}${DISTRO}.tar.xz ]]; then
-    echoText "BUILD SUCESSFUL"
+if [[ -e ${TARGET}-${TAG}${DISTRO}.tar.${COMPRESSION} ]]; then
+    echoText "BUILD SUCCESSFUL"
     echo -e "${BOLD}Script duration:${RST} $( format_time ${START} ${END} )"
-    echo -e "${BOLD}File location:${RST} ${TARGET}-${TAG}${DISTRO}.tar.xz"
-    echo -e "${BOLD}File size:${RST} $( du -h ${TARGET}-${TAG}${DISTRO}.tar.xz | awk '{print $1}' )"
+    echo -e "${BOLD}File location:${RST} ${TARGET}-${TAG}${DISTRO}.tar.${COMPRESSION}"
+    echo -e "${BOLD}File size:${RST} $( du -h ${TARGET}-${TAG}${DISTRO}.tar.${COMPRESSION} | awk '{print $1}' )"
 else
     echoText "BUILD FAILED"
 fi

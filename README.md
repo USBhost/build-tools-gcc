@@ -35,6 +35,7 @@ NOTE: Multiple parameters can and will almost always be used. See examples below
 + ```-b | --build:``` Build the toolchain. This parameter MUST be added for the toolchain to build if you add any parameters. Running just ```bash build``` will use this.
 + ```-c | --clean:``` Clean up from a previous build. Do this after the first download after every build.
 + ```-d | --download:``` Downloads the necessary components to compile. This MUST be added before building for the first time.
++ ```-g | --gz:``` Use GZIP compression to zip toolchain (Faster (de)compression, larger file)
 + ```-h | --help:``` Run the help menu then exits. Use this whenever you forget how to run the script.
 + ```-l | --linaro:``` Build a Linaro toolchain from the latest release branch, instead of the standard GNU source.
 + ```-nt | --no-tmpfs:``` Do not mount the build directories on tmpfs (use this if you don't have a lot of RAM)
@@ -58,11 +59,16 @@ it checks out the proper branch.
 
 ## After compilation
 
-Once it is done building, you will see a tar.xz file. Move that into the
+Once it is done building, you will see a tar.xz or tar.gz file (depending on if you passed -g or not). Move that into the
 directory of your choosing and run the following command:
 
 ```bash
 tar -xvf <toolchain_name>.tar.xz --strip-components=1
+```
+Or (if GZIP)
+
+```bash
+tar -xvzf <toolchain_name>.tar.gz --strip-components=1
 ```
 
 After that, point your cross compiler to the proper file and compile! This is

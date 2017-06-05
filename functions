@@ -94,6 +94,7 @@ function help_menu() {
     echo -e "  -b  | --build:       Builds the toolchain"
     echo -e "  -c  | --clean:       Cleans up the last compilation"
     echo -e "  -d  | --download:    Downloads the necessary components to build"
+    echo -e "  -g  | --gz:          Use GZIP compression to zip toolchain (Faster (de)compression, larger file)"
     echo -e "  -l  | --linaro:      Use Linaro's gcc branch instead of GNU's"
     echo -e "  -nt | --no-tmpfs:    If you don't have a lot of RAM, add this flag"
     echo -e "  -u  | --update:      Updates the downloaded components\n"
