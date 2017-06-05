@@ -58,6 +58,7 @@ TARGET="aarch64-linux-gnu"
 ARCH="arm64"
 GCC="gcc-6-branch"
 TMPFS="yes"
+COMPRESSION="xz"
 
 # If there are no parameters, assume user just wants to build
 [[ $# -eq 0 ]] && BUILD=true
@@ -74,6 +75,9 @@ while [[ $# -ge 1 ]]; do
             CLEAN=true ;;
         "-d"|"--download")
             DOWNLOAD=true ;;
+        "-g"|"--gz")
+	    COMPRESSION="gz"
+            COMPRESS_GZIP=true ;;
         "-h"|"--help")
             echo; help_menu ;;
         "-l"|"--linaro")
@@ -86,6 +90,7 @@ while [[ $# -ge 1 ]]; do
             TMPFS="no" ;;
         "-u"|"--update")
             UPDATE=true ;;
+
     esac
 
     shift
@@ -171,9 +176,9 @@ if [[ ${CLEAN} = true ]]; then
     rm -rf build-glibc/*
     rm -rf build-gcc/*
     rm -rf build-binutils/*
-    rm -rf *.tar.xz
+    rm -rf *.tar.*z
     rm -rf *linux-gnu*
-    if [[ "$( ls -A build-glibc )" ]] || [[ "$( ls -A build-gcc )" ]] || [[ "$( ls -A build-binutils )" ]] || [[ "$( ls -A build-glibc )" ]] || [[ -f *.tar.xz ]] || [[ -f *linux-gnu* ]]; then
+    if [[ "$( ls -A build-glibc )" ]] || [[ "$( ls -A build-gcc )" ]] || [[ "$( ls -A build-binutils )" ]] || [[ "$( ls -A build-glibc )" ]] || [[ -f *.tar.*z ]] || [[ -f *linux-gnu* ]]; then
         echo "Clean up failed! Aborting. Try checking that you have proper permissions to delete files."
         exit
 
@@ -332,10 +337,15 @@ fi
 
 echoText "PACKAGING TOOLCHAIN"
 
-echo "Target file: ${TARGET}-${TAG}${DISTRO}.tar.xz"
-echo "Packaging..."
-XZ_OPT=-9 tar cJf ${TARGET}-${TAG}${DISTRO}.tar.xz ${TARGET}
+echo "Target file: ${TARGET}-${TAG}${DISTRO}.tar.${COMPRESSION}"
 
+if [[ ${COMPRESS_GZIP} = true ]]; then
+    echo "Packaging with gzip..."
+    GZ_OPT=-9 tar -zcf ${TARGET}-${TAG}${DISTRO}.tar.${COMPRESSION} ${TARGET}
+else
+    echo "Packaging with xz..."
+    XZ_OPT=-9 tar -Jcf ${TARGET}-${TAG}${DISTRO}.tar.${COMPRESSION} ${TARGET}
+fi
 
 #################
 # ENDING OUTPUT #
@@ -343,11 +353,11 @@ XZ_OPT=-9 tar cJf ${TARGET}-${TAG}${DISTRO}.tar.xz ${TARGET}
 
 END=$( date +%s )
 
-if [[ -e ${TARGET}-${TAG}${DISTRO}.tar.xz ]]; then
-    echoText "BUILD SUCESSFUL"
+if [[ -e ${TARGET}-${TAG}${DISTRO}.tar.${COMPRESSION} ]]; then
+    echoText "BUILD SUCCESSFUL"
     echo -e "${BOLD}Script duration:${RST} $( format_time ${START} ${END} )"
-    echo -e "${BOLD}File location:${RST} ${TARGET}-${TAG}${DISTRO}.tar.xz"
-    echo -e "${BOLD}File size:${RST} $( du -h ${TARGET}-${TAG}${DISTRO}.tar.xz | awk '{print $1}' )"
+    echo -e "${BOLD}File location:${RST} ${TARGET}-${TAG}${DISTRO}.tar.${COMPRESSION}"
+    echo -e "${BOLD}File size:${RST} $( du -h ${TARGET}-${TAG}${DISTRO}.tar.${COMPRESSION} | awk '{print $1}' )"
 else
     echoText "BUILD FAILED"
 fi
