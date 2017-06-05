@@ -176,9 +176,9 @@ if [[ ${CLEAN} = true ]]; then
     rm -rf build-glibc/*
     rm -rf build-gcc/*
     rm -rf build-binutils/*
-    rm -rf *.tar.*z
+    rm -rf *.tar.${COMPRESSION}
     rm -rf *linux-gnu*
-    if [[ "$( ls -A build-glibc )" ]] || [[ "$( ls -A build-gcc )" ]] || [[ "$( ls -A build-binutils )" ]] || [[ "$( ls -A build-glibc )" ]] || [[ -f *.tar.*z ]] || [[ -f *linux-gnu* ]]; then
+    if [[ "$( ls -A build-glibc )" ]] || [[ "$( ls -A build-gcc )" ]] || [[ "$( ls -A build-binutils )" ]] || [[ -f *.tar.${COMPRESSION} ]] || [[ -f *linux-gnu* ]]; then
         echo "Clean up failed! Aborting. Try checking that you have proper permissions to delete files."
         exit
 
@@ -340,10 +340,10 @@ echoText "PACKAGING TOOLCHAIN"
 echo "Target file: ${TARGET}-${TAG}${DISTRO}.tar.${COMPRESSION}"
 
 if [[ ${COMPRESS_GZIP} = true ]]; then
-    echo "Packaging with gzip..."
+    echo "Packaging with GZIP..."
     GZ_OPT=-9 tar -zcf ${TARGET}-${TAG}${DISTRO}.tar.${COMPRESSION} ${TARGET}
 else
-    echo "Packaging with xz..."
+    echo "Packaging with XZ..."
     XZ_OPT=-9 tar -Jcf ${TARGET}-${TAG}${DISTRO}.tar.${COMPRESSION} ${TARGET}
 fi
 
