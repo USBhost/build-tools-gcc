@@ -313,9 +313,12 @@ cd ..
 
 
 if [[ ${TMPFS} = yes ]]; then
-	sudo umount -f build-glibc
-	sudo umount -f build-gcc
-	sudo umount -f build-binutils
+    if [[ check_sudo ]]; then
+        echo "Please enter your password at the following prompt. It is needed so we can unmount some folders from tmpfs.";
+    fi
+    sudo umount -f build-glibc
+    sudo umount -f build-gcc
+    sudo umount -f build-binutils
 fi
 
 
@@ -326,7 +329,7 @@ fi
 if [[ $( echo ${GCC} | grep linaro ) ]]; then
 	TAG=linaro-$( TZ=UTC date +%Y%m%d )
 else
-	TAG=$( TZ=UTC date +%Y%m%d ) 
+	TAG=$( TZ=UTC date +%Y%m%d )
 fi
 
 if [[ $( grep -i "Ubuntu" /etc/os-release ) ]]; then
