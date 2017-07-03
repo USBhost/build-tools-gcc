@@ -85,7 +85,7 @@ while [[ $# -ge 1 ]]; do
             # linaro-local/releases/linaro-6.3-2017.05
             # linaro-local/gcc-6-integration-branch
             # linaro/gcc-6-branch
-            GCC="linaro-local/releases/linaro-7.1-2017.05" ;;
+            GCC="linaro-local/snapshots/linaro-7.1-2017.06" ;;
         "-nt"|"--no-tmpfs")
             TMPFS="no" ;;
         "-u"|"--update")
