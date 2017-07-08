@@ -360,7 +360,7 @@ fi
 
 END=$( date +%s )
 
-if [[ -e ${TARGET}-${TAG}${DISTRO}.tar.${COMPRESSION} ]]; then
+if [[ -e ${TARGET}-${TAG}${DISTRO}.tar.${COMPRESSION} || -e ${TARGET}/bin/${TARGET}-gcc ]]; then
     echoText "BUILD SUCCESSFUL"
     echo -e "${BOLD}Script duration:${RST} $( format_time ${START} ${END} )"
 if [[ ${NO_COMPRESS} != true ]]; then
