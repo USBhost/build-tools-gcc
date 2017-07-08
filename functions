@@ -98,6 +98,7 @@ function help_menu() {
     echo -e "  -l  | --linaro:      Use Linaro's gcc branch instead of GNU's"
     echo -e "  -nt | --no-tmpfs:    If you don't have a lot of RAM, add this flag"
     echo -e "  -u  | --update:      Updates the downloaded components\n"
+    echo -e "  -nc | --no-compress: Skips creating toolchain archive (Useful if you don't intend to distribute your build)"
     echo -e "Download MUST be run before building. No options falls back to just building\n"
     exit
 }

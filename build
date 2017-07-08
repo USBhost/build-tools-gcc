@@ -90,6 +90,8 @@ while [[ $# -ge 1 ]]; do
             TMPFS="no" ;;
         "-u"|"--update")
             UPDATE=true ;;
+        "-nc"|"--no-compress")
+            NO_COMPRESS=true;
 
     esac
 
@@ -338,6 +340,7 @@ elif [[ $( grep -i "Arch" /etc/os-release ) ]]; then
     DISTRO=-arch
 fi
 
+if [[ ${NO_COMPRESS} != true ]]; then
 echoText "PACKAGING TOOLCHAIN"
 
 echo "Target file: ${TARGET}-${TAG}${DISTRO}.tar.${COMPRESSION}"
@@ -349,6 +352,7 @@ else
     echo "Packaging with XZ..."
     XZ_OPT=-9 tar -Jcf ${TARGET}-${TAG}${DISTRO}.tar.${COMPRESSION} ${TARGET}
 fi
+fi
 
 #################
 # ENDING OUTPUT #
@@ -356,11 +360,13 @@ fi
 
 END=$( date +%s )
 
-if [[ -e ${TARGET}-${TAG}${DISTRO}.tar.${COMPRESSION} ]]; then
+if [[ -e ${TARGET}-${TAG}${DISTRO}.tar.${COMPRESSION} || -e ${TARGET}/bin/${TARGET}-gcc ]]; then
     echoText "BUILD SUCCESSFUL"
     echo -e "${BOLD}Script duration:${RST} $( format_time ${START} ${END} )"
+if [[ ${NO_COMPRESS} != true ]]; then
     echo -e "${BOLD}File location:${RST} ${TARGET}-${TAG}${DISTRO}.tar.${COMPRESSION}"
     echo -e "${BOLD}File size:${RST} $( du -h ${TARGET}-${TAG}${DISTRO}.tar.${COMPRESSION} | awk '{print $1}' )"
+fi
 else
     echoText "BUILD FAILED"
 fi
