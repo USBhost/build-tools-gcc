@@ -72,17 +72,15 @@ while [[ $# -ge 1 ]]; do
         "-d"|"--download")
             DOWNLOAD=true ;;
 
-        "-g"|"--gz")
-            COMPRESSION="gz" ;;
-
         "-h"|"--help")
             echo; help_menu ;;
 
         "-l"|"--linaro")
             LINARO=true ;;
 
-        "-nc"|"--no-compress")
-            NO_COMPRESS=true ;;
+        "-p"|"--package")
+            shift
+            COMPRESSION=${1};;
 
         "-nt"|"--no-tmpfs")
             TMPFS="no" ;;
@@ -101,7 +99,6 @@ done
 
 # Default values
 [[ -z ${ARCH} ]] && ARCH="arm64"
-[[ -z ${COMPRESSION} ]] && COMPRESSION="xz"
 [[ -z ${LINARO} ]] && LINARO=false
 [[ -z ${TARGET} ]] && TARGET="aarch64-linux-gnu"
 [[ -z ${TMPFS} ]] && TMPFS="yes"
@@ -363,15 +360,15 @@ fi
 # PACKAGING #
 #############
 
-if [[ $( echo ${GCC} | grep linaro ) ]]; then
-	TAG=linaro-$( TZ=UTC date +%Y%m%d )
-else
-	TAG=$( TZ=UTC date +%Y%m%d )
-fi
+if [[ -n ${COMPRESSION} ]]; then
+    if [[ $( echo ${GCC} | grep linaro ) ]]; then
+	    TAG=linaro-$( TZ=UTC date +%Y%m%d )
+    else
+	    TAG=$( TZ=UTC date +%Y%m%d )
+    fi
 
-PACKAGE=${TARGET}-${VERSION}.x-${TAG}.tar.${COMPRESSION}
+    PACKAGE=${TARGET}-${VERSION}.x-${TAG}.tar.${COMPRESSION}
 
-if [[ -z ${NO_COMPRESS} ]]; then
     echoText "PACKAGING TOOLCHAIN"
 
     echo "Target file: ${PACKAGE}"
@@ -383,6 +380,8 @@ if [[ -z ${NO_COMPRESS} ]]; then
         "xz")
             echo "Packaging with XZ..."
             XZ_OPT=-9 tar -Jcf ${PACKAGE} ${TARGET} ;;
+        *)
+            reportError "Invalid compression specified... skipping" ;;
     esac
 fi
 
@@ -392,12 +391,14 @@ fi
 
 END=$( date +%s )
 
-if [[ -e ${PACKAGE} || -e ${TARGET}/bin/${TARGET}-gcc ]]; then
+if [[ -e ${TARGET}/bin/${TARGET}-gcc ]]; then
     echoText "BUILD SUCCESSFUL"
     echo -e "${BOLD}Script duration:${RST} $( format_time ${START} ${END} )"
-    if [[ -z ${NO_COMPRESS} ]]; then
-        echo -e "${BOLD}File location:${RST} ${PACKAGE}"
+    if [[ -n ${COMPRESSION} ]] && [[ -e ${PACKAGE} ]]; then
+        echo -e "${BOLD}File location:${RST} $(pwd)/${PACKAGE}"
         echo -e "${BOLD}File size:${RST} $( du -h ${PACKAGE} | awk '{print $1}' )"
+    else
+        echo -e "${BOLD}Toolchain location:${RST} $(pwd)/${TARGET}"
     fi
 else
     echoText "BUILD FAILED"

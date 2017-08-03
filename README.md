@@ -35,13 +35,12 @@ NOTE: Multiple parameters can and will almost always be used. See examples below
 + ```-b | --build:``` Build the toolchain. This parameter MUST be added for the toolchain to build if you add any parameters. Running just ```./build``` will use this.
 + ```-c | --clean:``` Clean up from a previous build. Do this after the first download after every build.
 + ```-d | --download:``` Downloads the necessary components to compile. This MUST be added before building for the first time.
-+ ```-g | --gz:``` Use GZIP compression to zip toolchain (Faster (de)compression, larger file)
 + ```-h | --help:``` Run the help menu then exits. Use this whenever you forget how to run the script.
 + ```-l | --linaro:``` Builds a Linaro toolchain from the latest release branch, instead of the standard GNU source
-+ ```-nc | --no-compress:``` Do not compress the toolchain after compilation (helpful if you don't need to distribute the build)
 + ```-nt | --no-tmpfs:``` Do not mount the build directories on tmpfs (use this if you don't have a lot of RAM)
++ ```-p | --package:``` Compress toolchain after building; specify either gz or xz. Example ```-p gz```
 + ```-u | --update:``` Updates the git repos that were downloaded. Recommended before any build.
-+ ```-v | --version:``` Allows the user to specify which GCC version they want (4, 5, 6, 7, or 8 [GNU only]). Example: ```-v 7```
++ ```-v | --version:``` Specify which GCC version to build (4, 5, 6, 7, or 8 [GNU only]). Example: ```-v 7```
 
 Example commands:
 
@@ -61,13 +60,17 @@ it checks out the proper branch.
 
 ## After compilation
 
-Once it is done building, you will see a tar.xz or tar.gz file (depending on if you passed -g or not). Move that into the
-directory of your choosing and run the following command:
+Once it is done building, you will have a folder with the compiled toolchain as well as either a tar.xz or tar.gz file (depending on if you passed -p or not).
+
+If the toolchains are compressed, move them into your directory of choice and run the following commands:
+
+For xz compression:
 
 ```bash
 tar -xvf <toolchain_name>.tar.xz --strip-components=1
 ```
-Or (if GZIP)
+
+For gz compression:
 
 ```bash
 tar -xvzf <toolchain_name>.tar.gz --strip-components=1
