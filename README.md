@@ -20,7 +20,7 @@ Once you have set up your environment, run the following:
 ```bash
 git clone https://github.com/nathanchance/build-tools-gcc
 cd build-tools-gcc
-bash build -h
+./build -h
 ```
 
 The printout will show you how to run the script. A fuller explananation of the
@@ -32,25 +32,27 @@ parameters is below
 NOTE: Multiple parameters can and will almost always be used. See examples below.
 
 + ```-a | --arm:``` This allows the user to build an arm toolchain, instead of an arm64 toolchain.
-+ ```-b | --build:``` Build the toolchain. This parameter MUST be added for the toolchain to build if you add any parameters. Running just ```bash build``` will use this.
++ ```-b | --build:``` Build the toolchain. This parameter MUST be added for the toolchain to build if you add any parameters. Running just ```./build``` will use this.
 + ```-c | --clean:``` Clean up from a previous build. Do this after the first download after every build.
 + ```-d | --download:``` Downloads the necessary components to compile. This MUST be added before building for the first time.
 + ```-g | --gz:``` Use GZIP compression to zip toolchain (Faster (de)compression, larger file)
 + ```-h | --help:``` Run the help menu then exits. Use this whenever you forget how to run the script.
-+ ```-l | --linaro:``` Build a Linaro toolchain from the latest release branch, instead of the standard GNU source.
++ ```-l | --linaro:``` Builds a Linaro toolchain from the latest release branch, instead of the standard GNU source
++ ```-nc | --no-compress:``` Do not compress the toolchain after compilation (helpful if you don't need to distribute the build)
 + ```-nt | --no-tmpfs:``` Do not mount the build directories on tmpfs (use this if you don't have a lot of RAM)
-+ ```-u | --update:``` This will update the git repos that were downloaded. Recommended before any build.
++ ```-u | --update:``` Updates the git repos that were downloaded. Recommended before any build.
++ ```-v | --version:``` Allows the user to specify which GCC version they want (4, 5, 6, 7, or 8 [GNU only]). Example: ```-v 7```
 
 Example commands:
 
 ```bash
 # Build a Linaro toolchain for the first time
 # Download components, checkout Linaro, then build
-bash build -d -l -b
+./build -d -l -b
 
 # Build a GNU toolchain after a few compilations
 # Update sources, clean previous compilation, then build
-bash build -u -c -b
+./build -u -c -b
 ```
 
 If you want to switch between GNU and Linaro builds, ALWAYS run update so that

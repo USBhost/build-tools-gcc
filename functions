@@ -87,8 +87,8 @@ function format_time() {
 # Help menu function
 function help_menu() {
     echo -e "${BOLD}OVERVIEW:${RST} Builds an aarch64 gcc toolchain\n"
-    echo -e "${BOLD}USAGE:${RST} bash ${0} <options>\n"
-    echo -e "${BOLD}EXAMPLE:${RST} bash ${0} -u -c -b\n"
+    echo -e "${BOLD}USAGE:${RST} ./${0} <options>\n"
+    echo -e "${BOLD}EXAMPLE:${RST} ./${0} -u -c -b\n"
     echo -e "${BOLD}OPTIONAL PARAMETERS:${RST}"
     echo -e "  -a  | --arm:         Builds targeting arm-linux-gnueabi instead of aarch64-linux-gnu"
     echo -e "  -b  | --build:       Builds the toolchain"
@@ -96,9 +96,10 @@ function help_menu() {
     echo -e "  -d  | --download:    Downloads the necessary components to build"
     echo -e "  -g  | --gz:          Use GZIP compression to zip toolchain (Faster (de)compression, larger file)"
     echo -e "  -l  | --linaro:      Use Linaro's gcc branch instead of GNU's"
-    echo -e "  -nt | --no-tmpfs:    If you don't have a lot of RAM, add this flag"
-    echo -e "  -u  | --update:      Updates the downloaded components\n"
     echo -e "  -nc | --no-compress: Skips creating toolchain archive (Useful if you don't intend to distribute your build)"
+    echo -e "  -nt | --no-tmpfs:    If you don't have a lot of RAM, add this flag"
+    echo -e "  -u  | --update:      Updates the downloaded components"
+    echo -e "  -v  | --version:     Specify the GCC version you want to build (4, 5, 6, 7, and 8 [GNU only])\n"
     echo -e "Download MUST be run before building. No options falls back to just building\n"
     exit
 }
