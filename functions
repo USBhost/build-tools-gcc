@@ -86,20 +86,20 @@ function format_time() {
 
 # Help menu function
 function help_menu() {
-    echo -e "${BOLD}OVERVIEW:${RST} Builds an aarch64 gcc toolchain\n"
-    echo -e "${BOLD}USAGE:${RST} ./${0} <options>\n"
-    echo -e "${BOLD}EXAMPLE:${RST} ./${0} -u -c -b\n"
+    echo -e "${BOLD}OVERVIEW:${RST} Build an aarch64 gcc toolchain\n"
+    echo -e "${BOLD}USAGE:${RST} ./build <options>\n"
+    echo -e "${BOLD}EXAMPLE:${RST} cd ${HOME}/build-tools-gcc && ./build -u -c -b\n"
     echo -e "${BOLD}OPTIONAL PARAMETERS:${RST}"
-    echo -e "  -a  | --arm:         Builds targeting arm-linux-gnueabi instead of aarch64-linux-gnu"
-    echo -e "  -b  | --build:       Builds the toolchain"
-    echo -e "  -c  | --clean:       Cleans up the last compilation"
-    echo -e "  -d  | --download:    Downloads the necessary components to build"
+    echo -e "  -a  | --arm:         Target arm-linux-gnueabi instead of aarch64-linux-gnu (for 32-bit arm devices)"
+    echo -e "  -b  | --build:       Build the toolchain"
+    echo -e "  -c  | --clean:       Clean up the last compilation"
+    echo -e "  -d  | --download:    Download the necessary components to build"
     echo -e "  -l  | --linaro:      Use Linaro's gcc branch instead of GNU's"
     echo -e "  -nt | --no-tmpfs:    If you don't have a lot of RAM, add this flag"
-    echo -e "  -p  | --package:     Compress toolchain after build; takes either gz or xz as a parameter"
-    echo -e "  -u  | --update:      Updates the downloaded components"
-    echo -e "  -v  | --version:     Specify the GCC version you want to build (4, 5, 6, 7, and 8 [GNU only])\n"
-    echo -e "Download MUST be run before building. No options falls back to just building\n"
+    echo -e "  -p  | --package:     Compress toolchain after build; takes either 'gz' (GZIP, faster, larger) OR 'xz' (XZ, slower, smaller) as a parameter"
+    echo -e "  -u  | --update:      Update the downloaded components"
+    echo -e "  -v  | --version:     Specify the GCC version you want to build (4, 5, 6, 7, and 8* [*GNU only])\n"
+    echo -e "Download (-d) option MUST be run before building. No options falls back to just building\n"
     exit
 }
 
