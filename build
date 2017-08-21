@@ -63,6 +63,10 @@ while [[ $# -ge 1 ]]; do
             TARGET="arm-linux-gnueabi"
             ARCH="arm" ;;
 
+        "-x6"|"--x86_64")
+            TARGET="x86_64-linux-gnu"
+            ARCH="x86_64" ;;
+
         "-b"|"--build")
             BUILD=true ;;
 
@@ -130,12 +134,12 @@ PATH=${INSTALL}/bin:${PATH}
 JOBS="-j$( nproc --all )"
 
 # Binary versions
-BINUTILS="binutils-2_28-branch"
+BINUTILS="binutils-2_29-branch"
 GMP="gmp-6.1.2"
 MPFR="mpfr-3.1.5"
 MPC="mpc-1.0.3"
 ISL="master"
-GLIBC="glibc-2.25"
+GLIBC="glibc-2.26"
 
 
 #######################

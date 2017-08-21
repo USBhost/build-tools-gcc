@@ -91,6 +91,7 @@ function help_menu() {
     echo -e "${BOLD}EXAMPLE:${RST} cd ${HOME}/build-tools-gcc && ./build -u -c -b\n"
     echo -e "${BOLD}OPTIONAL PARAMETERS:${RST}"
     echo -e "  -a  | --arm:         Target arm-linux-gnueabi instead of aarch64-linux-gnu (for 32-bit arm devices)"
+    echo -e "  -x6 | --x86_64:      Target x86_64-linux-gnu (for 64-bit x86 devices)"
     echo -e "  -b  | --build:       Build the toolchain"
     echo -e "  -c  | --clean:       Clean up the last compilation"
     echo -e "  -d  | --download:    Download the necessary components to build"

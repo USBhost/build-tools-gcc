@@ -32,6 +32,7 @@ parameters is below
 NOTE: Multiple parameters can and will almost always be used. See examples below.
 
 + ```-a | --arm:``` This allows the user to build an arm toolchain, instead of an arm64 toolchain.
++ ```-x6 | --x86_64:``` This allows the user to build an x86_64 toolchain.
 + ```-b | --build:``` Build the toolchain. This parameter MUST be added for the toolchain to build if you add any parameters. Running just ```./build``` will use this.
 + ```-c | --clean:``` Clean up from a previous build. Do this after the first download after every build.
 + ```-d | --download:``` Downloads the necessary components to compile. This MUST be added before building for the first time.
