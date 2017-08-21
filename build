@@ -63,6 +63,10 @@ while [[ $# -ge 1 ]]; do
             TARGET="arm-linux-gnueabi"
             ARCH="arm" ;;
 
+        "-x6"|"--x86_64")
+            TARGET="x86_64-linux-gnu"
+            ARCH="x86_64" ;;
+
         "-b"|"--build")
             BUILD=true ;;
 
