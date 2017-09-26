@@ -24,7 +24,7 @@ RST="\033[0m"
 YLW="\033[01;33m"
 
 # Prints a formatted header to let the user know what's being done
-function echoText() {
+function header() {
     echo -e ${RED}
     echo -e "====$( for i in $( seq ${#1} ); do echo -e "=\c"; done )===="
     echo -e "==  ${1}  =="
@@ -33,7 +33,7 @@ function echoText() {
 }
 
 # Prints an error in bold red
-function reportError() {
+function report_error() {
     echo -e ""
     echo -e ${RED}"${1}"${RST}
     if [[ -z ${2} ]]; then
@@ -42,7 +42,7 @@ function reportError() {
 }
 
 # Prints a warning in bold yellow
-function reportWarning() {
+function report_warning() {
     echo -e ""
     echo -e ${YLW}"${1}"${RST}
     if [[ -z ${2} ]]; then

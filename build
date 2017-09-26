@@ -119,7 +119,7 @@ case "${LINARO}:${VERSION}" in
     "true:5") GCC=linaro-local/gcc-5-integration-branch ;;
     "true:6") GCC=linaro-local/gcc-6-integration-branch ;;
     "true:7") GCC=linaro-local/gcc-7-integration-branch ;;
-    "true:8") reportError "There's no such thing as Linaro 8.x Clannad..." && exit ;;
+    "true:8") report_error "There's no such thing as Linaro 8.x Clannad..." && exit ;;
 esac
 
 
@@ -149,7 +149,7 @@ GLIBC="glibc-2.26"
 START=$( date +%s )
 
 if [[ ${DOWNLOAD} = true ]]; then
-    echoText "DOWNLOADING SOURCES"
+    header "DOWNLOADING SOURCES"
 
     if [[ ! -e ${MPFR}.tar.xz ]] && [[ ! -d ${MPFR} ]]; then
         wget http://www.mpfr.org/mpfr-current/${MPFR}.tar.xz &
@@ -197,7 +197,7 @@ fi
 ############
 
 if [[ ${CLEAN} = true ]]; then
-    echoText "CLEANING UP"
+    header "CLEANING UP"
 
     rm -rf build-glibc/*
     rm -rf build-gcc/*
@@ -225,7 +225,7 @@ fi
 ############
 
 if [[ ${UPDATE} = true ]] || [[ ${DOWNLOAD} = true ]]; then
-    echoText "UPDATING SOURCES"
+    header "UPDATING SOURCES"
 
     cd isl
     git remote update
@@ -256,9 +256,9 @@ fi
 ###############
 
 if [[ -z ${BUILD} ]]; then
-    reportWarning "Building was not requested, ending script!" && exit
+    report_warning "Building was not requested, ending script!" && exit
 elif [[ ! -d gcc ]]; then
-    reportError "GCC source is missing! Did you run with --download or -d ?"
+    report_error "GCC source is missing! Did you run with --download or -d ?"
     help_menu
 fi
 
@@ -287,7 +287,7 @@ cd ..
 # BUILDING #
 ############
 
-echoText "BUILDING BINUTILS"
+header "BUILDING BINUTILS"
 cd build-binutils
 ../binutils/configure ${CONFIGURATION} \
                       --target=${TARGET} \
@@ -297,12 +297,12 @@ make ${JOBS} || exit 1
 make install ${JOBS} || exit 1
 
 
-echoText "MAKING LINUX HEADERS"
+header "MAKING LINUX HEADERS"
 cd ../linux
 make ARCH=${ARCH} INSTALL_HDR_PATH=${INSTALL}/${TARGET} headers_install ${JOBS} || exit 1
 
 
-echoText "MAKING GCC"
+header "MAKING GCC"
 cd ../build-gcc
 ../gcc/configure ${CONFIGURATION} \
                  --enable-languages=c \
@@ -316,7 +316,7 @@ if [[ ${ARCH} = "x86_64" ]]; then
 fi
 
 
-echoText "MAKING GLIBC"
+header "MAKING GLIBC"
 cd ../build-glibc
 ../${GLIBC}/configure --prefix=${INSTALL}/${TARGET} \
                       --build=${MACHTYPE} \
@@ -345,7 +345,7 @@ if [[ ${ARCH} != "x86_64" ]]; then
 fi
 
 
-echoText "INSTALLING GCC"
+header "INSTALLING GCC"
 cd ../build-gcc
 make all ${JOBS} || exit 1
 make install ${JOBS} || exit 1
@@ -373,7 +373,7 @@ if [[ -n ${COMPRESSION} ]]; then
 
     PACKAGE=${TARGET}-${VERSION}.x-${TAG}.tar.${COMPRESSION}
 
-    echoText "PACKAGING TOOLCHAIN"
+    header "PACKAGING TOOLCHAIN"
 
     echo "Target file: ${PACKAGE}"
 
@@ -385,7 +385,7 @@ if [[ -n ${COMPRESSION} ]]; then
             echo "Packaging with XZ..."
             XZ_OPT=-9 tar -Jcf ${PACKAGE} ${TARGET} ;;
         *)
-            reportError "Invalid compression specified... skipping" ;;
+            report_error "Invalid compression specified... skipping" ;;
     esac
 fi
 
@@ -396,7 +396,7 @@ fi
 END=$( date +%s )
 
 if [[ -e ${TARGET}/bin/${TARGET}-gcc ]]; then
-    echoText "BUILD SUCCESSFUL"
+    header "BUILD SUCCESSFUL"
     echo -e "${BOLD}Script duration:${RST} $( format_time ${START} ${END} )"
     if [[ -n ${COMPRESSION} ]] && [[ -e ${PACKAGE} ]]; then
         echo -e "${BOLD}File location:${RST} $(pwd)/${PACKAGE}"
@@ -405,7 +405,7 @@ if [[ -e ${TARGET}/bin/${TARGET}-gcc ]]; then
         echo -e "${BOLD}Toolchain location:${RST} $(pwd)/${TARGET}"
     fi
 else
-    echoText "BUILD FAILED"
+    header "BUILD FAILED"
 fi
 
 # Alert to script end
