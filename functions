@@ -23,31 +23,51 @@ RED="\033[01;31m"
 RST="\033[0m"
 YLW="\033[01;33m"
 
+# Easy alias for escape codes
+function echo() {
+    command echo -e "$@"
+}
+
+# Help menu function
+function help_menu() {
+    echo
+    echo "${BOLD}OVERVIEW:${RST} Build a gcc toolchain\n"
+    echo "${BOLD}USAGE:${RST} ./build <options>\n"
+    echo "${BOLD}EXAMPLE:${RST} ./build -a arm64 -s linaro -v 7\n"
+    echo "${BOLD}REQUIRED PARAMETERS:${RST}"
+    echo "  -a  | --arch:        Possible values: arm, arm64, i686, or x86_64. This is the toolchain's target architecture."
+    echo "  -s  | --source:      Possible values: gnu or linaro. This is the GCC source (GNU official vs. Linaro fork)."
+    echo "  -v  | --version:     Possible values: (4, 5, 6, 7, and 8* [*GNU only]). This is the GCC version to build.\n"
+    echo "${BOLD}OPTIONAL PARAMETERS:${RST}"
+    echo "  -nc | --no-clean:    Do not clean up the last compilation (useful if you have a slow machine and your build errors)."
+    echo "  -nt | --no-tmpfs:    Do not use tmpfs for building (useful if you don't have much RAM)."
+    echo "  -nu | --no-update:   Do not update the downloaded components before building (useful if you have slow internet)."
+    echo "  -p  | --package:     Possible values: gz or xz. Compresses toolchain after build.\n"
+}
+
 # Prints a formatted header to let the user know what's being done
 function header() {
-    echo -e ${RED}
-    echo -e "====$(for i in $(seq ${#1}); do echo -e "=\c"; done)===="
-    echo -e "==  ${1}  =="
-    echo -e "====$(for i in $(seq ${#1}); do echo -e "=\c"; done)===="
-    echo -e ${RST}
+    echo ${RED}
+    echo "====$(for i in $(seq ${#1}); do echo "=\c"; done)===="
+    echo "==  ${1}  =="
+    echo "====$(for i in $(seq ${#1}); do echo "=\c"; done)===="
+    echo ${RST}
 }
 
 # Prints an error in bold red
 function report_error() {
-    echo -e ""
-    echo -e ${RED}"${1}"${RST}
-    if [[ -z ${2} ]]; then
-        echo -e ""
-    fi
+    echo ""
+    echo ${RED}"${1}"${RST}
+    [[ ${2} =~ "-n" ]] && echo
+    [[ ${2} =~ "-h" ]] && help_menu
+    exit
 }
 
 # Prints a warning in bold yellow
 function report_warning() {
-    echo -e ""
-    echo -e ${YLW}"${1}"${RST}
-    if [[ -z ${2} ]]; then
-        echo -e ""
-    fi
+    echo ""
+    echo ${YLW}"${1}"${RST}
+    [[ ${2} =~ "-n" ]] && echo
 }
 
 # Formats the time for the end
@@ -82,26 +102,6 @@ function format_time() {
     fi
 
     echo ${TIME_STRING}
-}
-
-# Help menu function
-function help_menu() {
-    echo -e "${BOLD}OVERVIEW:${RST} Build an aarch64 gcc toolchain\n"
-    echo -e "${BOLD}USAGE:${RST} ./build <options>\n"
-    echo -e "${BOLD}EXAMPLE:${RST} cd ${HOME}/build-tools-gcc && ./build -u -c -b\n"
-    echo -e "${BOLD}OPTIONAL PARAMETERS:${RST}"
-    echo -e "  -a  | --arm:         Target arm-linux-gnueabi instead of aarch64-linux-gnu (for 32-bit arm devices)"
-    echo -e "  -x6 | --x86_64:      Target x86_64-linux-gnu (for 64-bit x86 devices)"
-    echo -e "  -b  | --build:       Build the toolchain"
-    echo -e "  -c  | --clean:       Clean up the last compilation"
-    echo -e "  -d  | --download:    Download the necessary components to build"
-    echo -e "  -l  | --linaro:      Use Linaro's gcc branch instead of GNU's"
-    echo -e "  -nt | --no-tmpfs:    If you don't have a lot of RAM, add this flag"
-    echo -e "  -p  | --package:     Compress toolchain after build; takes either 'gz' (GZIP, faster, larger) OR 'xz' (XZ, slower, smaller) as a parameter"
-    echo -e "  -u  | --update:      Update the downloaded components"
-    echo -e "  -v  | --version:     Specify the GCC version you want to build (4, 5, 6, 7, and 8* [*GNU only])\n"
-    echo -e "Download (-d) option MUST be run before building. No options falls back to just building\n"
-    exit
 }
 
 # Check if user needs to enter sudo password or not

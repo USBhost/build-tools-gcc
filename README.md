@@ -23,41 +23,17 @@ cd build-tools-gcc
 ./build -h
 ```
 
-The printout will show you how to run the script. A fuller explananation of the
-parameters is below
-
-
-## Parameters
-
-NOTE: Multiple parameters can and will almost always be used. See examples below.
-
-+ ```-a | --arm:``` This allows the user to build an arm toolchain, instead of an arm64 toolchain.
-+ ```-x6 | --x86_64:``` This allows the user to build an x86_64 toolchain.
-+ ```-b | --build:``` Build the toolchain. This parameter MUST be added for the toolchain to build if you add any parameters. Running just ```./build``` will use this.
-+ ```-c | --clean:``` Clean up from a previous build. Do this after the first download after every build.
-+ ```-d | --download:``` Downloads the necessary components to compile. This MUST be added before building for the first time.
-+ ```-h | --help:``` Run the help menu then exits. Use this whenever you forget how to run the script.
-+ ```-l | --linaro:``` Builds a Linaro toolchain from the latest release branch, instead of the standard GNU source
-+ ```-nt | --no-tmpfs:``` Do not mount the build directories on tmpfs (use this if you don't have a lot of RAM)
-+ ```-p | --package:``` Compress toolchain after building; specify either gz or xz. Example ```-p gz```
-+ ```-u | --update:``` Updates the git repos that were downloaded. Recommended before any build.
-+ ```-v | --version:``` Specify which GCC version to build (4, 5, 6, 7, or 8 [GNU only]). Example: ```-v 7```
+The printout will show you how to run the script.
 
 Example commands:
 
 ```bash
-# Build a Linaro toolchain for the first time
-# Download components, checkout Linaro, then build
-./build -d -l -b
+# Build a Linaro 7.x toolchain for arm64
+./build -a arm64 -s linaro -v 7
 
-# Build a GNU toolchain after a few compilations
-# Update sources, clean previous compilation, then build
-./build -u -c -b
+# Build a GNU 5.x toolchain for arm
+./build -a arm -s gnu -v 5
 ```
-
-If you want to switch between GNU and Linaro builds, ALWAYS run update so that
-it checks out the proper branch.
-
 
 ## After compilation
 
@@ -99,7 +75,6 @@ accept a particular coding style:
 
 + All variables are uppercased and use curly braces: ```${VARIABLE}``` instead of ```$variable```
 + Four spaces for indents
-+ All conditions must be one line to start: ```if [[ conditions ]]; then```
 + Double brackets and single equal sign for string comparisons in if blocks: ```if [[ ${VARIABLE} = "yes" ]]; then```
 
 
