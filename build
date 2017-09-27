@@ -45,7 +45,7 @@
 # FUNCTIONS #
 #############
 
-BASH_DIR=$( cd $( dirname $( readlink -f "${BASH_SOURCE[0]}" ) ) && pwd )
+BASH_DIR=$(cd $(dirname $(readlink -f "${BASH_SOURCE[0]}")) && pwd)
 source ${BASH_DIR}/functions
 
 
@@ -131,7 +131,7 @@ esac
 CONFIGURATION="--disable-multilib --disable-werror"
 INSTALL="${BASH_DIR}/${TARGET}"
 PATH=${INSTALL}/bin:${PATH}
-JOBS="-j$( nproc --all )"
+JOBS="-j$(nproc --all)"
 
 # Binary versions
 BINUTILS="binutils-2_29-branch"
@@ -146,7 +146,7 @@ GLIBC="glibc-2.26"
 # DOWNLOADING SOURCES #
 #######################
 
-START=$( date +%s )
+START=$(date +%s)
 
 if [[ ${DOWNLOAD} = true ]]; then
     header "DOWNLOADING SOURCES"
@@ -179,7 +179,7 @@ if [[ ${DOWNLOAD} = true ]]; then
     if [[ ! -e linux ]]; then
         git clone https://github.com/torvalds/linux.git &
     fi
-    for JOB in $( jobs -p ); do
+    for JOB in $(jobs -p); do
 	    wait ${JOB}
     done
     if [[ ${EX} = 1 ]]; then
@@ -204,9 +204,9 @@ if [[ ${CLEAN} = true ]]; then
     rm -rf build-binutils/*
     rm -rf *.tar.${COMPRESSION}
     rm -rf *linux-gnu*
-    if [[ "$( ls -A build-glibc )" ]] ||
-       [[ "$( ls -A build-gcc )" ]] ||
-       [[ "$( ls -A build-binutils )" ]] ||
+    if [[ "$(ls -A build-glibc)" ]] ||
+       [[ "$(ls -A build-gcc)" ]] ||
+       [[ "$(ls -A build-binutils)" ]] ||
        [[ -f *.tar.${COMPRESSION} ]] ||
        [[ -f *linux-gnu* ]]; then
 
@@ -365,10 +365,10 @@ fi
 #############
 
 if [[ -n ${COMPRESSION} ]]; then
-    if [[ $( echo ${GCC} | grep linaro ) ]]; then
-	    TAG=linaro-$( TZ=UTC date +%Y%m%d )
+    if [[ $(echo ${GCC} | grep linaro) ]]; then
+	    TAG=linaro-$(TZ=UTC date +%Y%m%d)
     else
-	    TAG=$( TZ=UTC date +%Y%m%d )
+	    TAG=$(TZ=UTC date +%Y%m%d)
     fi
 
     PACKAGE=${TARGET}-${VERSION}.x-${TAG}.tar.${COMPRESSION}
@@ -393,14 +393,14 @@ fi
 # ENDING OUTPUT #
 #################
 
-END=$( date +%s )
+END=$(date +%s)
 
 if [[ -e ${TARGET}/bin/${TARGET}-gcc ]]; then
     header "BUILD SUCCESSFUL"
-    echo -e "${BOLD}Script duration:${RST} $( format_time ${START} ${END} )"
+    echo -e "${BOLD}Script duration:${RST} $(format_time ${START} ${END})"
     if [[ -n ${COMPRESSION} ]] && [[ -e ${PACKAGE} ]]; then
         echo -e "${BOLD}File location:${RST} $(pwd)/${PACKAGE}"
-        echo -e "${BOLD}File size:${RST} $( du -h ${PACKAGE} | awk '{print $1}' )"
+        echo -e "${BOLD}File size:${RST} $(du -h ${PACKAGE} | awk '{print $1}')"
     else
         echo -e "${BOLD}Toolchain location:${RST} $(pwd)/${TARGET}"
     fi

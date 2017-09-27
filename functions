@@ -26,9 +26,9 @@ YLW="\033[01;33m"
 # Prints a formatted header to let the user know what's being done
 function header() {
     echo -e ${RED}
-    echo -e "====$( for i in $( seq ${#1} ); do echo -e "=\c"; done )===="
+    echo -e "====$(for i in $(seq ${#1}); do echo -e "=\c"; done)===="
     echo -e "==  ${1}  =="
-    echo -e "====$( for i in $( seq ${#1} ); do echo -e "=\c"; done )===="
+    echo -e "====$(for i in $(seq ${#1}); do echo -e "=\c"; done)===="
     echo -e ${RST}
 }
 
