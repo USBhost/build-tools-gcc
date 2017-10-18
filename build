@@ -61,7 +61,7 @@ while [[ $# -ge 1 ]]; do
         "-v"|"--version") shift && VERSION=${1} ;;
 
         # OPTIONAL FLAGS
-        "-nc"|"--clean") CLEAN=false ;;
+        "-nc"|"--no-clean") CLEAN=false ;;
         "-nt"|"--no-tmpfs") TMPFS=false ;;
         "-nu"|"--no-update") UPDATE=false ;;
         "-p"|"--package") shift && COMPRESSION=${1};;
