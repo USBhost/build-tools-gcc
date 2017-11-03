@@ -218,21 +218,23 @@ if [[ ${UPDATE} != false ]]; then
     git checkout ${ISL}
     git merge origin/${ISL}
     ./autogen.sh
+    cd ..
 
-    cd ../binutils
+    cd binutils
     git remote update
     git checkout ${BINUTILS}
     git merge origin/${BINUTILS}
+    cd ..
 
-    cd ../gcc
+    cd gcc
     git remote update
     git checkout ${GCC}
     git merge origin/${GCC}
+    cd ..
 
-    cd ../linux
+    cd linux
     git remote update
     git merge origin/master
-
     cd ..
 fi
 
