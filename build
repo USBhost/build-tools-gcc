@@ -147,9 +147,18 @@ if [[ ! -d ${GLIBC} ]]; then
     EXTRACTION_NEEDED=true
 fi
 
-if [[ ! -e isl ]]; then
-    header "DOWNLOADING ISL"
-    git clone git://repo.or.cz/isl.git -b ${ISL}
+if [[ ${VERSION} -le 5 ]]; then
+    ISL="isl-0.17.1"
+    if [[ ! -d ${ISL} ]]; then
+        header "DOWNLOADING ISL"
+        wget http://isl.gforge.inria.fr/${ISL}.tar.xz
+        EXTRACTION_NEEDED=true
+    fi
+else
+    if [[ ! -e isl ]]; then
+        header "DOWNLOADING ISL"
+        git clone git://repo.or.cz/isl.git -b ${ISL}
+    fi
 fi
 
 if [[ ! -e binutils ]]; then
@@ -213,26 +222,30 @@ fi
 if [[ ${UPDATE} != false ]]; then
     header "UPDATING SOURCES"
 
-    cd isl
-    git remote update
-    git checkout ${ISL}
-    git merge origin/${ISL}
-    ./autogen.sh
+    if [[ ${VERSION} -ge 6 ]]; then
+        cd isl
+        git remote update
+        git checkout ${ISL}
+        git merge origin/${ISL}
+        ./autogen.sh
+        cd ..
+    fi
 
-    cd ../binutils
+    cd binutils
     git remote update
     git checkout ${BINUTILS}
     git merge origin/${BINUTILS}
+    cd ..
 
-    cd ../gcc
+    cd gcc
     git remote update
     git checkout ${GCC}
     git merge origin/${GCC}
+    cd ..
 
-    cd ../linux
+    cd linux
     git remote update
     git merge origin/master
-
     cd ..
 fi
 
@@ -262,7 +275,11 @@ cd gcc
 ln -s -f ../${MPFR} mpfr
 ln -s -f ../${GMP} gmp
 ln -s -f ../${MPC} mpc
-ln -s -f ../isl isl
+if [[ ${VERSION} -le 5 ]]; then
+    ln -s -f ../${ISL} isl
+else
+    ln -s -f ../isl isl
+fi
 cd ..
 
 
