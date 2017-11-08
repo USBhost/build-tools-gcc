@@ -157,23 +157,23 @@ if [[ ${VERSION} -le 5 ]]; then
 else
     if [[ ! -e isl ]]; then
         header "DOWNLOADING ISL"
-        git clone git://repo.or.cz/isl.git -b ${ISL}
+        git clone git://repo.or.cz/isl.git --depth 1 -b ${ISL}
     fi
 fi
 
 if [[ ! -e binutils ]]; then
     header "DOWNLOADING BINUTILS"
-    git clone https://git.linaro.org/toolchain/binutils-gdb.git binutils -b ${BINUTILS}
+    git clone https://git.linaro.org/toolchain/binutils-gdb.git binutils --depth 1 -b ${BINUTILS}
 fi
 
 if [[ ! -e gcc ]]; then
     header "DOWNLOADING GCC"
-    git clone https://git.linaro.org/toolchain/gcc.git -b ${GCC}
+    git clone https://git.linaro.org/toolchain/gcc.git --depth 1 -b ${GCC}
 fi
 
 if [[ ! -e linux ]]; then
     header "DOWNLOADING LINUX KERNEL"
-    git clone https://github.com/torvalds/linux.git
+    git clone https://github.com/torvalds/linux.git --depth 1
 fi
 
 for JOB in $(jobs -p); do
