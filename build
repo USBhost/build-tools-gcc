@@ -42,6 +42,25 @@
 
 
 #############
+# VARIABLES #
+#############
+
+# Configuration variables
+CONFIGURATION="--disable-multilib --disable-werror"
+INSTALL="${BASH_DIR}/${TARGET}"
+PATH=${INSTALL}/bin:${PATH}
+JOBS="-j$(nproc --all)"
+
+# Binary versions
+BINUTILS="binutils-2_29-branch"
+GMP="gmp-6.1.2"
+MPFR="mpfr-3.1.6"
+MPC="mpc-1.0.3"
+ISL="master"
+GLIBC="glibc-2.26"
+
+
+#############
 # FUNCTIONS #
 #############
 
@@ -84,37 +103,22 @@ esac
 
 # Set GCC branch based on version and Linaro or not
 case "${SOURCE}:${VERSION}" in
-    "gnu:4") GCC=gcc-4_9-branch ;;
-    "gnu:5") GCC=gcc-5-branch ;;
+    "gnu:4") GCC=gcc-4_9-branch;
+             ISL="isl-0.17.1" ;;
+    "gnu:5") GCC=gcc-5-branch;
+             ISL="isl-0.17.1" ;;
     "gnu:6") GCC=gcc-6-branch ;;
     "gnu:7") GCC=gcc-7-branch ;;
     "gnu:8") GCC=master ;;
-    "linaro:4") GCC=linaro-local/releases/linaro-4.9-2017.01 ;;
-    "linaro:5") GCC=linaro-local/gcc-5-integration-branch ;;
+    "linaro:4") GCC=linaro-local/releases/linaro-4.9-2017.01;
+                ISL="isl-0.17.1" ;;
+    "linaro:5") GCC=linaro-local/gcc-5-integration-branch;
+                ISL="isl-0.17.1" ;;
     "linaro:6") GCC=linaro-local/gcc-6-integration-branch ;;
     "linaro:7") GCC=linaro-local/gcc-7-integration-branch ;;
     "linaro:8") report_error "There's no such thing as Linaro 8.x Clannad..." -h ;;
     *) report_error "Absent or invalid GCC version or source specified!" -h ;;
 esac
-
-
-#############
-# VARIABLES #
-#############
-
-# Configuration variables
-CONFIGURATION="--disable-multilib --disable-werror"
-INSTALL="${BASH_DIR}/${TARGET}"
-PATH=${INSTALL}/bin:${PATH}
-JOBS="-j$(nproc --all)"
-
-# Binary versions
-BINUTILS="binutils-2_29-branch"
-GMP="gmp-6.1.2"
-MPFR="mpfr-3.1.6"
-MPC="mpc-1.0.3"
-ISL="master"
-GLIBC="glibc-2.26"
 
 
 #######################
@@ -148,37 +152,32 @@ if [[ ! -d ${GLIBC} ]]; then
 fi
 
 if [[ ${VERSION} -le 5 ]]; then
-    ISL="isl-0.17.1"
     if [[ ! -d ${ISL} ]]; then
         header "DOWNLOADING ISL"
         wget http://isl.gforge.inria.fr/${ISL}.tar.xz
         EXTRACTION_NEEDED=true
     fi
 else
-    if [[ ! -e isl ]]; then
+    if [[ ! -d isl ]]; then
         header "DOWNLOADING ISL"
         git clone git://repo.or.cz/isl.git --depth 1 -b ${ISL}
     fi
 fi
 
-if [[ ! -e binutils ]]; then
+if [[ ! -d binutils ]]; then
     header "DOWNLOADING BINUTILS"
     git clone https://git.linaro.org/toolchain/binutils-gdb.git binutils --depth 1 -b ${BINUTILS}
 fi
 
-if [[ ! -e gcc ]]; then
+if [[ ! -d gcc ]]; then
     header "DOWNLOADING GCC"
     git clone https://git.linaro.org/toolchain/gcc.git --depth 1 -b ${GCC}
 fi
 
-if [[ ! -e linux ]]; then
+if [[ ! -d linux ]]; then
     header "DOWNLOADING LINUX KERNEL"
     git clone https://github.com/torvalds/linux.git --depth 1
 fi
-
-for JOB in $(jobs -p); do
-    wait ${JOB}
-done
 
 if [[ ${EXTRACTION_NEEDED} = true ]]; then
     header "EXTRACTING DOWNLOADED TARBALLS"
@@ -186,7 +185,7 @@ if [[ ${EXTRACTION_NEEDED} = true ]]; then
     rm *.tar*
 fi
 
-if [[ -d isl ]]; then
+if [[ -d isl ]] && [[ ${UPDATE} = false ]]; then
     cd isl && ./autogen.sh && cd ..
 fi
 
@@ -194,14 +193,14 @@ fi
 if [[ ${CLEAN} != false ]]; then
     header "CLEANING UP"
 
-    rm -rf build-glibc/*
-    rm -rf build-gcc/*
-    rm -rf build-binutils/*
+    rm -rf build-glibc
+    rm -rf build-gcc
+    rm -rf build-binutils
     rm -rf *.tar.${COMPRESSION}
     rm -rf *linux-gnu*
-    if [[ "$(ls -A build-glibc)" ]] ||
-       [[ "$(ls -A build-gcc)" ]] ||
-       [[ "$(ls -A build-binutils)" ]] ||
+    if [[ -d build-glibc ]] ||
+       [[ -d build-gcc ]] ||
+       [[ -d build-binutils ]] ||
        [[ -f *.tar.${COMPRESSION} ]] ||
        [[ -f *linux-gnu* ]]; then
 
@@ -258,9 +257,9 @@ if [[ ! -d gcc ]]; then
     report_error "GCC source is missing! Please check your connection and rerun the script!" -h
 fi
 
-mkdir -p build-glibc
-mkdir -p build-gcc
-mkdir -p build-binutils
+mkdir build-glibc
+mkdir build-gcc
+mkdir build-binutils
 
 if [[ ${TMPFS} != false ]]; then
     if [[ check_sudo ]]; then
@@ -353,7 +352,7 @@ cd ..
 
 
 if [[ ${TMPFS} != false ]]; then
-    [[ check_sudo ]] && echo "Please enter your password at the following prompt. It is needed so we can unmount some folders from tmpfs.";
+    [[ check_sudo ]] && echo "Please enter your password at the following prompt. It is needed so we can unmount the build folders from tmpfs.";
     sudo umount -f build-glibc
     sudo umount -f build-gcc
     sudo umount -f build-binutils
