@@ -151,7 +151,7 @@ fi
 
 if [[ ${VERSION} -le 5 ]]; then
     if [[ ! -d ${ISL} ]]; then
-        header "DOWNLOADING ISL"
+        header "DOWNLOADING ISL ${ISL} FOR GCC 5 AND LOWER"
         wget http://isl.gforge.inria.fr/${ISL}.tar.xz
         EXTRACTION_NEEDED=true
     fi
@@ -183,14 +183,15 @@ if [[ ${EXTRACTION_NEEDED} = true ]]; then
     rm *.tar*
 fi
 
-if [[ -d isl ]] && [[ ${UPDATE} = false ]]; then
-    cd isl && ./autogen.sh && cd ..
-fi
-
-
 if [[ ${CLEAN} != false ]]; then
     header "CLEANING UP"
 
+    if [[ ${TMPFS} != false ]]; then
+        [[ check_sudo ]] && echo "Please enter your password at the following prompt. It is needed so we can unmount the build folders from tmpfs."
+        sudo umount -f build-glibc 2>/dev/null
+        sudo umount -f build-gcc 2>/dev/null
+        sudo umount -f build-binutils 2>/dev/null
+    fi
     rm -rf build-glibc
     rm -rf build-gcc
     rm -rf build-binutils
@@ -202,8 +203,7 @@ if [[ ${CLEAN} != false ]]; then
        [[ -f *.tar.${COMPRESSION} ]] ||
        [[ -f *linux-gnu* ]]; then
 
-        echo "Clean up failed! Aborting. Try checking that you have proper permissions to delete files."
-        exit
+        report_error "Clean up failed! Aborting. Try checking that you have proper permissions to delete files."
 
     else
         echo "Clean up successful!"
@@ -223,7 +223,7 @@ if [[ ${UPDATE} != false ]]; then
         cd isl
         git remote update
         git checkout ${ISL}
-        git merge origin/${ISL}
+        git reset --hard origin/${ISL}
         ./autogen.sh
         cd ..
     fi
@@ -231,19 +231,21 @@ if [[ ${UPDATE} != false ]]; then
     cd binutils
     git remote update
     git checkout ${BINUTILS}
-    git merge origin/${BINUTILS}
+    git reset --hard origin/${BINUTILS}
     cd ..
 
     cd gcc
     git remote update
     git checkout ${GCC}
-    git merge origin/${GCC}
+    git reset --hard origin/${GCC}
     cd ..
 
     cd linux
     git remote update
     git merge origin/master
     cd ..
+else
+    [[ -d isl ]] && cd isl && ./autogen.sh && cd ..
 fi
 
 
@@ -263,9 +265,7 @@ mkdir build-gcc
 mkdir build-binutils
 
 if [[ ${TMPFS} != false ]]; then
-    if [[ check_sudo ]]; then
-        echo "Please enter your password at the following prompt. It is needed so we can mount some folders on tmpfs.";
-    fi
+    [[ check_sudo ]] && echo "Please enter your password at the following prompt. It is needed so we can mount some folders on tmpfs."
     sudo mount -t tmpfs -o rw none build-glibc
     sudo mount -t tmpfs -o rw none build-gcc
     sudo mount -t tmpfs -o rw none build-binutils
@@ -275,11 +275,8 @@ cd gcc
 ln -s -f ../${MPFR} mpfr
 ln -s -f ../${GMP} gmp
 ln -s -f ../${MPC} mpc
-if [[ ${VERSION} -le 5 ]]; then
-    ln -s -f ../${ISL} isl
-else
-    ln -s -f ../isl isl
-fi
+[[ ${VERSION} -le 5 ]] && ln -s -f ../${ISL} isl \
+                       || ln -s -f ../isl isl
 cd ..
 
 
