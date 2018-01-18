@@ -60,8 +60,8 @@ JOBS="-j$(nproc --all)"
 # Binary versions
 BINUTILS="binutils-2_29-branch"
 GMP="gmp-6.1.2"
-MPFR="mpfr-3.1.6"
-MPC="mpc-1.0.3"
+MPFR="mpfr-4.0.0"
+MPC="mpc-1.1.0"
 ISL="master"
 GLIBC="glibc-2.26"
 
