@@ -149,17 +149,14 @@ if [[ ! -d ${GLIBC} ]]; then
     EXTRACTION_NEEDED=true
 fi
 
+rm -rf isl*
 if [[ ${VERSION} -le 5 ]]; then
-    if [[ ! -d ${ISL} ]]; then
-        header "DOWNLOADING ISL ${ISL} FOR GCC 5 AND LOWER"
-        wget http://isl.gforge.inria.fr/${ISL}.tar.xz
-        EXTRACTION_NEEDED=true
-    fi
+    header "DOWNLOADING ISL ${ISL} FOR GCC 5 AND LOWER"
+    wget http://isl.gforge.inria.fr/${ISL}.tar.xz
+    EXTRACTION_NEEDED=true
 else
-    if [[ ! -d isl ]]; then
-        header "DOWNLOADING ISL"
-        git clone git://repo.or.cz/isl.git -b ${ISL}
-    fi
+    header "DOWNLOADING ISL"
+    git clone git://repo.or.cz/isl.git -b ${ISL}
 fi
 
 if [[ ! -d binutils ]]; then
