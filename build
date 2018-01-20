@@ -55,10 +55,10 @@ function help_menu() {
     echo "  -s  | --source:      Possible values: gnu or linaro. This is the GCC source (GNU official vs. Linaro fork)."
     echo "  -v  | --version:     Possible values: (4, 5, 6, 7, and 8* [*GNU only]). This is the GCC version to build.\n"
     echo "${BOLD}OPTIONAL PARAMETERS:${RST}"
-    echo "  -nc | --no-clean:    Do not clean up the last compilation (useful if you have a slow machine and your build errors)."
     echo "  -nt | --no-tmpfs:    Do not use tmpfs for building (useful if you don't have much RAM)."
     echo "  -nu | --no-update:   Do not update the downloaded components before building (useful if you have slow internet)."
-    echo "  -p  | --package:     Possible values: gz or xz. Compresses toolchain after build.\n"
+    echo "  -p  | --package:     Possible values: gz or xz. Compresses toolchain after build."
+    echo "  -t  | --tarballs:    Use tarballs for the Linux kernel, binutils, and, GCC\n"
 }
 
 
@@ -166,10 +166,10 @@ function parse_parameters() {
             "-v"|"--version") shift && VERSION=${1} ;;
 
             # OPTIONAL FLAGS
-            "-nc"|"--no-clean") CLEAN=false ;;
             "-nt"|"--no-tmpfs") TMPFS=false ;;
             "-nu"|"--no-update") UPDATE=false ;;
-            "-p"|"--package") shift && COMPRESSION=${1};;
+            "-p"|"--package") shift && COMPRESSION=${1} ;;
+            "-t"|"--tarballs") TARBALLS=true ;;
 
             # HELP!
             "-h"|"--help") help_menu; exit ;;
@@ -187,55 +187,79 @@ function parse_parameters() {
         *) report_error "Absent or invalid arch specified!" -h ;;
     esac
 
-    # Set GCC branch based on version and Linaro or not
-    case "${SOURCE}:${VERSION}" in
-        "gnu:4") GCC=gcc-4_9-branch;
-                 ISL="isl-0.17.1" ;;
-        "gnu:5") GCC=gcc-5-branch;
-                 ISL="isl-0.17.1" ;;
-        "gnu:6") GCC=gcc-6-branch ;;
-        "gnu:7") GCC=gcc-7-branch ;;
-        "gnu:8") GCC=master ;;
-        "linaro:4") GCC=linaro-local/releases/linaro-4.9-2017.01;
-                    ISL="isl-0.17.1" ;;
-        "linaro:5") GCC=linaro-local/gcc-5-integration-branch;
-                    ISL="isl-0.17.1" ;;
-        "linaro:6") GCC=linaro-local/gcc-6-integration-branch ;;
-        "linaro:7") GCC=linaro-local/gcc-7-integration-branch ;;
-        "linaro:8") report_error "There's no such thing as Linaro 8.x Clannad..." -h ;;
-        *) report_error "Absent or invalid GCC version or source specified!" -h ;;
-    esac
+    if [[ ! ${TARBALLS} ]]; then
+        # Set GCC branch based on version and Linaro or not
+        case "${SOURCE}:${VERSION}" in
+            "gnu:4") GCC=gcc-4_9-branch
+                     ISL="isl-0.17.1" ;;
+            "gnu:5") GCC=gcc-5-branch
+                     ISL="isl-0.17.1" ;;
+            "gnu:6") GCC=gcc-6-branch ;;
+            "gnu:7") GCC=gcc-7-branch ;;
+            "gnu:8") GCC=master ;;
+            "linaro:4") GCC=linaro-local/releases/linaro-4.9-2017.01
+                        ISL="isl-0.17.1" ;;
+            "linaro:5") GCC=linaro-local/gcc-5-integration-branch
+                        ISL="isl-0.17.1" ;;
+            "linaro:6") GCC=linaro-local/gcc-6-integration-branch ;;
+            "linaro:7") GCC=linaro-local/gcc-7-integration-branch ;;
+            "linaro:8") report_error "There's no such thing as Linaro 8.x Clannad..." -h ;;
+            *) report_error "Absent or invalid GCC version or source specified!" -h ;;
+        esac
+    else
+        # Set GCC branch based on version and Linaro or not
+        case "${SOURCE}:${VERSION}" in
+            "gnu:4") GCC=gcc-4.9.4
+                     ISL="isl-0.17.1"
+                     EXT=gz ;;
+            "gnu:5") GCC=gcc-5.5.0
+                     ISL="isl-0.17.1" ;;
+            "gnu:6") GCC=gcc-6.4.0 ;;
+            "gnu:7") GCC=gcc-7.2.0 ;;
+            "gnu:8") report_error "GCC 8.0 is currently a WIP so there is no tarball to download! Either use the git repo or choose a new version..." ;;
+            "linaro:4") GCC=linaro-4.9-2017.01
+                        ISL="isl-0.17.1" ;;
+            "linaro:5") GCC=linaro-5.5-2017.10
+                        ISL="isl-0.17.1" ;;
+            "linaro:6") GCC=linaro-snapshot-6.4-2017.11 ;;
+            "linaro:7") GCC=linaro-snapshot-7.2-2017.11 ;;
+            "linaro:8") report_error "There's no such thing as Linaro 8.x Clannad..." -h ;;
+            *) report_error "Absent or invalid GCC version or source specified!" -h ;;
+        esac
+
+        LINUX=4.15-rc8
+
+        BINUTILS=2.29.1
+    fi
 }
 
 
 # Clean up from a previous compilation
 function clean_up() {
-    if [[ ${CLEAN} != false ]]; then
-        header "CLEANING UP"
+    header "CLEANING UP"
 
-        if [[ ${TMPFS} != false ]]; then
-            [[ check_sudo ]] && echo "Please enter your password at the following prompt. It is needed so we can unmount the build folders from tmpfs."
-            sudo umount -f build-glibc 2>/dev/null
-            sudo umount -f build-gcc 2>/dev/null
-            sudo umount -f build-binutils 2>/dev/null
-        fi
-        git clean -fxdq -e sources
-        find . -maxdepth 1 -type l -exec rm -rf {} \;
-        if [[ -d binutils ]] ||
-           [[ -d build-binutils ]] ||
-           [[ -d build-gcc ]] ||
-           [[ -d build-glibc ]] ||
-           [[ -d gcc ]] ||
-           [[ -d linux ]] ||
-           [[ -f *linux-gnu* ]] ||
-           [[ -f *.tar.${COMPRESSION} ]]; then
+    if [[ ${TMPFS} != false ]]; then
+        [[ check_sudo ]] && echo "Please enter your password at the following prompt. It is needed so we can unmount the build folders from tmpfs."
+        sudo umount -f build-glibc 2>/dev/null
+        sudo umount -f build-gcc 2>/dev/null
+        sudo umount -f build-binutils 2>/dev/null
+    fi
+    git clean -fxdq -e sources
+    find . -maxdepth 1 -type l -exec rm -rf {} \;
+    if [[ -d binutils ]] ||
+       [[ -d build-binutils ]] ||
+       [[ -d build-gcc ]] ||
+       [[ -d build-glibc ]] ||
+       [[ -d gcc ]] ||
+       [[ -d linux ]] ||
+       [[ -f *linux-gnu* ]] ||
+       [[ -f *.tar.${COMPRESSION} ]]; then
 
-            report_error "Clean up failed! Aborting. Try checking that you have proper permissions to delete files."
+        report_error "Clean up failed! Aborting. Try checking that you have proper permissions to delete files."
 
-        else
-            echo "Clean up successful!"
+    else
+        echo "Clean up successful!"
 
-        fi
     fi
 }
 
@@ -264,42 +288,89 @@ function download_sources() {
         wget http://ftp.gnu.org/gnu/glibc/${GLIBC}.tar.xz
     fi
 
-    rm -rf isl*
     if [[ ${VERSION} -le 5 ]]; then
-        header "DOWNLOADING ISL ${ISL} FOR GCC 5 AND LOWER"
-        wget http://isl.gforge.inria.fr/${ISL}.tar.xz
+        if [[ ! -f ${ISL}.tar.xz ]]; then
+            header "DOWNLOADING ISL ${ISL} FOR GCC 5 AND LOWER"
+            wget http://isl.gforge.inria.fr/${ISL}.tar.xz
+        fi
     else
-        header "DOWNLOADING ISL"
-        git clone git://repo.or.cz/isl.git -b ${ISL}
+        if [[ ! -d isl ]]; then
+            header "DOWNLOADING ISL"
+            git clone git://repo.or.cz/isl.git -b ${ISL}
+        fi
     fi
 
-    if [[ ! -d binutils ]]; then
-        header "DOWNLOADING BINUTILS"
-        git clone https://git.linaro.org/toolchain/binutils-gdb.git binutils -b ${BINUTILS}
+    if [[ ! ${TARBALLS} ]]; then
+        if [[ ! -d binutils ]]; then
+            header "DOWNLOADING BINUTILS"
+            git clone https://git.linaro.org/toolchain/binutils-gdb.git binutils -b ${BINUTILS}
+        fi
+
+        if [[ ! -d gcc ]]; then
+            header "DOWNLOADING GCC"
+            git clone https://git.linaro.org/toolchain/gcc.git -b ${GCC}
+        fi
+
+        if [[ ! -d linux ]]; then
+            header "DOWNLOADING LINUX KERNEL"
+            git clone https://github.com/torvalds/linux.git
+        fi
+    else
+        if [[ ! -f binutils-${BINUTILS}.tar.xz ]]; then
+            header "DOWNLOADING BINUTILS"
+            wget http://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS}.tar.xz
+        fi
+
+        if [[ ${SOURCE} == "gnu" ]]; then
+            if [[ ! -f ${GCC}.tar.${EXT:-xz} ]]; then
+                header "DOWNLOADING GCC"
+                wget https://mirrors.kernel.org/gnu/gcc/${GCC}/${GCC}.tar.${EXT:-gz}
+            fi
+            GCC_TAR=${GCC}.tar.${EXT:-gz}
+        else
+            if [[ ! -f gcc-${GCC}.tar.gz ]]; then
+                header "DOWNLOADING GCC"
+                wget https://git.linaro.org/toolchain/gcc.git/snapshot/gcc-${GCC}.tar.gz
+            fi
+            GCC_TAR=gcc-${GCC}.tar.gz
+        fi
+
+        if [[ ! -f linux-${LINUX}.tar.gz ]]; then
+            header "DOWNLOADING LINUX KERNEL"
+            wget https://git.kernel.org/torvalds/t/linux-${LINUX}.tar.gz
+        fi
     fi
 
-    if [[ ! -d gcc ]]; then
-        header "DOWNLOADING GCC"
-        git clone https://git.linaro.org/toolchain/gcc.git -b ${GCC}
-    fi
+}
 
-    if [[ ! -d linux ]]; then
-        header "DOWNLOADING LINUX KERNEL"
-        git clone https://github.com/torvalds/linux.git
-    fi
+
+function extract() {
+    mkdir -p ${2}
+    tar xfk ${1} -C ${2} --strip-components=1
 }
 
 
 # Extract tarballs to their proper locations
 function extract_sources() {
     header "EXTRACTING DOWNLOADED TARBALLS"
-    for F in *.tar*; do tar xfk ${F} -C ..; done
+    extract ${MPFR}.tar.xz ../${MPFR}
+    extract ${GMP}.tar.xz ../${GMP}
+    extract ${MPC}.tar.gz ../${MPC}
+    extract ${GLIBC}.tar.xz ../${GLIBC}
+    if [[ ${TARBALLS} ]]; then
+        if [[ ${VERSION} -le 5 ]]; then
+            extract ${ISL}.tar.xz ../${ISL}
+        fi
+        extract binutils-${BINUTILS}.tar.xz ../binutils
+        extract ${GCC_TAR} ../gcc
+        extract linux-${LINUX}.tar.gz ../linux
+    fi
 }
 
 
 # Update git repos
 function update_repos() {
-    if [[ ${UPDATE} != false ]]; then
+    if [[ ! ${UPDATE} && ! ${TARBALLS} ]]; then
         header "UPDATING SOURCES"
 
         if [[ ${VERSION} -ge 6 ]]; then
