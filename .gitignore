@@ -1,3 +1,5 @@
 */
-*.tar.xz
-*.tar.gz
+binutils
+gcc
+linux
+*.tar*

@@ -219,16 +219,16 @@ function clean_up() {
             sudo umount -f build-gcc 2>/dev/null
             sudo umount -f build-binutils 2>/dev/null
         fi
-        rm -rf build-glibc
-        rm -rf build-gcc
-        rm -rf build-binutils
-        rm -rf *.tar.${COMPRESSION}
-        rm -rf *linux-gnu*
-        if [[ -d build-glibc ]] ||
-           [[ -d build-gcc ]] ||
+        git clean -fxdq -e sources
+        find . -maxdepth 1 -type l -exec rm -rf {} \;
+        if [[ -d binutils ]] ||
            [[ -d build-binutils ]] ||
-           [[ -f *.tar.${COMPRESSION} ]] ||
-           [[ -f *linux-gnu* ]]; then
+           [[ -d build-gcc ]] ||
+           [[ -d build-glibc ]] ||
+           [[ -d gcc ]] ||
+           [[ -d linux ]] ||
+           [[ -f *linux-gnu* ]] ||
+           [[ -f *.tar.${COMPRESSION} ]]; then
 
             report_error "Clean up failed! Aborting. Try checking that you have proper permissions to delete files."
 
@@ -241,35 +241,33 @@ function clean_up() {
 
 
 function download_sources() {
-    if [[ ! -d ${MPFR} ]]; then
+    mkdir -p sources
+    cd sources
+
+    if [[ ! -f ${MPFR}.tar.xz ]]; then
         header "DOWNLOADING MPR"
         wget http://www.mpfr.org/mpfr-current/${MPFR}.tar.xz
-        EXTRACTION_NEEDED=true
     fi
 
-    if [[ ! -d ${GMP} ]]; then
+    if [[ ! -f ${GMP}.tar.xz ]]; then
         header "DOWNLOADING GMP"
         wget ftp://ftp.gnu.org/gnu/gmp/${GMP}.tar.xz
-        EXTRACTION_NEEDED=true
     fi
 
-    if [[ ! -d ${MPC} ]]; then
+    if [[ ! -f ${MPC}.tar.gz ]]; then
         header "DOWNLOADING MPC"
         wget ftp://ftp.gnu.org/gnu/mpc/${MPC}.tar.gz
-        EXTRACTION_NEEDED=true
     fi
 
-    if [[ ! -d ${GLIBC} ]]; then
+    if [[ ! -f ${GLIBC}.tar.xz ]]; then
         header "DOWNLOADING GLIBC"
         wget http://ftp.gnu.org/gnu/glibc/${GLIBC}.tar.xz
-        EXTRACTION_NEEDED=true
     fi
 
     rm -rf isl*
     if [[ ${VERSION} -le 5 ]]; then
         header "DOWNLOADING ISL ${ISL} FOR GCC 5 AND LOWER"
         wget http://isl.gforge.inria.fr/${ISL}.tar.xz
-        EXTRACTION_NEEDED=true
     else
         header "DOWNLOADING ISL"
         git clone git://repo.or.cz/isl.git -b ${ISL}
@@ -289,12 +287,13 @@ function download_sources() {
         header "DOWNLOADING LINUX KERNEL"
         git clone https://github.com/torvalds/linux.git
     fi
+}
 
-    if [[ ${EXTRACTION_NEEDED} = true ]]; then
-        header "EXTRACTING DOWNLOADED TARBALLS"
-        for F in *.tar*; do tar xfk ${F}; done
-        rm *.tar*
-    fi
+
+# Extract tarballs to their proper locations
+function extract_sources() {
+    header "EXTRACTING DOWNLOADED TARBALLS"
+    for F in *.tar*; do tar xfk ${F} -C ..; done
 }
 
 
@@ -331,6 +330,19 @@ function update_repos() {
     else
         [[ -d isl ]] && cd isl && ./autogen.sh && cd ..
     fi
+
+    cd ..
+    if [[ ! -d linux ]]; then
+        ln -s sources/linux linux
+    fi
+
+    if [[ ! -d binutils ]]; then
+        ln -s sources/binutils binutils
+    fi
+
+    if [[ ! -d gcc ]]; then
+        ln -s sources/gcc gcc
+    fi
 }
 
 
@@ -355,10 +367,10 @@ function setup_env() {
     fi
 
     cd gcc
-    ln -s -f ../${MPFR} mpfr
-    ln -s -f ../${GMP} gmp
-    ln -s -f ../${MPC} mpc
-    [[ ${VERSION} -le 5 ]] && ln -s -f ../${ISL} isl \
+    ln -s -f ../../${MPFR} mpfr
+    ln -s -f ../../${GMP} gmp
+    ln -s -f ../../${MPC} mpc
+    [[ ${VERSION} -le 5 ]] && ln -s -f ../../${ISL} isl \
                            || ln -s -f ../isl isl
     cd ..
 }
@@ -505,6 +517,7 @@ setup_variables
 parse_parameters $@
 clean_up
 download_sources
+extract_sources
 update_repos
 setup_env
 build_binutils
