@@ -208,6 +208,37 @@ function parse_parameters() {
 }
 
 
+# Clean up from a previous compilation
+function clean_up() {
+    if [[ ${CLEAN} != false ]]; then
+        header "CLEANING UP"
+
+        if [[ ${TMPFS} != false ]]; then
+            [[ check_sudo ]] && echo "Please enter your password at the following prompt. It is needed so we can unmount the build folders from tmpfs."
+            sudo umount -f build-glibc 2>/dev/null
+            sudo umount -f build-gcc 2>/dev/null
+            sudo umount -f build-binutils 2>/dev/null
+        fi
+        rm -rf build-glibc
+        rm -rf build-gcc
+        rm -rf build-binutils
+        rm -rf *.tar.${COMPRESSION}
+        rm -rf *linux-gnu*
+        if [[ -d build-glibc ]] ||
+           [[ -d build-gcc ]] ||
+           [[ -d build-binutils ]] ||
+           [[ -f *.tar.${COMPRESSION} ]] ||
+           [[ -f *linux-gnu* ]]; then
+
+            report_error "Clean up failed! Aborting. Try checking that you have proper permissions to delete files."
+
+        else
+            echo "Clean up successful!"
+
+        fi
+    fi
+}
+
 
 function download_sources() {
     if [[ ! -d ${MPFR} ]]; then
@@ -263,38 +294,6 @@ function download_sources() {
         header "EXTRACTING DOWNLOADED TARBALLS"
         for F in *.tar*; do tar xfk ${F}; done
         rm *.tar*
-    fi
-}
-
-
-# Clean up from a previous compilation
-function clean_up() {
-    if [[ ${CLEAN} != false ]]; then
-        header "CLEANING UP"
-
-        if [[ ${TMPFS} != false ]]; then
-            [[ check_sudo ]] && echo "Please enter your password at the following prompt. It is needed so we can unmount the build folders from tmpfs."
-            sudo umount -f build-glibc 2>/dev/null
-            sudo umount -f build-gcc 2>/dev/null
-            sudo umount -f build-binutils 2>/dev/null
-        fi
-        rm -rf build-glibc
-        rm -rf build-gcc
-        rm -rf build-binutils
-        rm -rf *.tar.${COMPRESSION}
-        rm -rf *linux-gnu*
-        if [[ -d build-glibc ]] ||
-           [[ -d build-gcc ]] ||
-           [[ -d build-binutils ]] ||
-           [[ -f *.tar.${COMPRESSION} ]] ||
-           [[ -f *linux-gnu* ]]; then
-
-            report_error "Clean up failed! Aborting. Try checking that you have proper permissions to delete files."
-
-        else
-            echo "Clean up successful!"
-
-        fi
     fi
 }
 
@@ -504,8 +503,8 @@ function ending_info() {
 
 setup_variables
 parse_parameters $@
-download_sources
 clean_up
+download_sources
 update_repos
 setup_env
 build_binutils
