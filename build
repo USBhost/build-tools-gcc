@@ -144,12 +144,12 @@ function setup_variables() {
     JOBS="-j$(nproc --all)"
 
     # Binary versions
-    BINUTILS="binutils-2_29-branch"
+    BINUTILS="binutils-2_30-branch"
     GMP="gmp-6.1.2"
-    MPFR="mpfr-4.0.0"
+    MPFR="mpfr-4.0.1"
     MPC="mpc-1.1.0"
     ISL="master"
-    GLIBC="glibc-2.26"
+    GLIBC="glibc-2.27"
 
     # Start of script
     START=$(date +%s)
@@ -227,9 +227,9 @@ function parse_parameters() {
             *) report_error "Absent or invalid GCC version or source specified!" -h ;;
         esac
 
-        LINUX=4.15-rc8
+        LINUX=4.15.2
 
-        BINUTILS=2.29.1
+        BINUTILS=2.30
     fi
 }
 
