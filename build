@@ -227,7 +227,7 @@ function parse_parameters() {
             *) report_error "Absent or invalid GCC version or source specified!" -h ;;
         esac
 
-        LINUX=4.15.2
+        LINUX=4.15
 
         BINUTILS=2.30
     fi
@@ -337,7 +337,7 @@ function download_sources() {
 
         if [[ ! -f linux-${LINUX}.tar.gz ]]; then
             header "DOWNLOADING LINUX KERNEL"
-            wget https://git.kernel.org/torvalds/t/linux-${LINUX}.tar.gz
+            wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-${LINUX}.tar.xz
         fi
     fi
 
