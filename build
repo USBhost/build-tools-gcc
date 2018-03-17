@@ -363,7 +363,7 @@ function extract_sources() {
         fi
         extract binutils-${BINUTILS}.tar.xz ../binutils
         extract ${GCC_TAR} ../gcc
-        extract linux-${LINUX}.tar.gz ../linux
+        extract linux-${LINUX}.tar.xz ../linux
     fi
 }
 
