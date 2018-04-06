@@ -227,7 +227,7 @@ function parse_parameters() {
             *) report_error "Absent or invalid GCC version or source specified!" -h ;;
         esac
 
-        LINUX=4.15.2
+        LINUX=4.16
 
         BINUTILS=2.30
     fi
