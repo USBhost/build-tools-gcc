@@ -3,6 +3,8 @@
 This is a script to build GCC toolchains targeting arm and arm64 devices
 (primarily Android devices).
 
+NOTE: This repo is in maintenance mode, meaning I am not doing anymore active development on it. If you submit a pull request, it will be dealt with but I am not fixing any bugs with it anymore.
+
 
 ## Using the script
 
