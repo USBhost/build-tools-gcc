@@ -204,7 +204,7 @@ function parse_parameters() {
                         ISL="isl-0.17.1" ;;
             "linaro:6") GCC=linaro-local/gcc-6-integration-branch ;;
             "linaro:7") GCC=linaro-local/gcc-7-integration-branch
-                     ISL="isl-0.19" ;;
+                        ISL="isl-0.19" ;;
             "linaro:8") report_error "There's no such thing as Linaro 8.x Clannad..." -h ;;
             *) report_error "Absent or invalid GCC version or source specified!" -h ;;
         esac
@@ -226,7 +226,7 @@ function parse_parameters() {
                         ISL="isl-0.17.1" ;;
             "linaro:6") GCC=linaro-snapshot-6.4-2018.04 ;;
             "linaro:7") GCC=linaro-snapshot-7.3-2018.04
-                     ISL="isl-0.19" ;;
+                        ISL="isl-0.19" ;;
             "linaro:8") report_error "There's no such thing as Linaro 8.x Clannad..." -h ;;
             *) report_error "Absent or invalid GCC version or source specified!" -h ;;
         esac
