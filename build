@@ -291,7 +291,7 @@ function download_sources() {
 
     if [[ ! -f ${GLIBC}.tar.xz ]]; then
         header "DOWNLOADING GLIBC"
-        wget http://ftp.gnu.org/gnu/glibc/${GLIBC}.tar.xz
+        wget https://ftp.gnu.org/gnu/glibc/${GLIBC}.tar.xz
     fi
 
     if [[ ${VERSION} -le 5 ]] || [[ ${VERSION} -eq 7 ]]; then
