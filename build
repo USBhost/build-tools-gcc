@@ -364,7 +364,7 @@ function extract_sources() {
     extract ${MPC}.tar.gz ../${MPC}
     extract ${GLIBC}.tar.xz ../${GLIBC}
     if [[ ${TARBALLS} ]]; then
-        if [[ ${VERSION} -le 5 ]]; then
+        if [[ ${VERSION} -le 5 ]] || [[ ${VERSION} -eq 7 ]]; then
             extract ${ISL}.tar.xz ../${ISL}
         fi
         extract binutils-${BINUTILS}.tar.xz ../binutils
@@ -379,7 +379,7 @@ function update_repos() {
     if [[ ! ${UPDATE} && ! ${TARBALLS} ]]; then
         header "UPDATING SOURCES"
 
-        if [[ ${VERSION} -ge 6 ]]; then
+        if [[ ${VERSION} -eq 6 ]] || [ ${VERSION} -ge 8 ]]; then
             cd isl
             git remote update
             git checkout ${ISL}
@@ -447,8 +447,11 @@ function setup_env() {
     ln -s -f ../../${MPFR} mpfr
     ln -s -f ../../${GMP} gmp
     ln -s -f ../../${MPC} mpc
-    [[ ${VERSION} -le 5 ]] && ln -s -f ../../${ISL} isl \
-                           || ln -s -f ../isl isl
+    if [[ ${VERSION} -le 5 ]] || [[ ${VERSION} -eq 7 ]]; then
+        ln -s -f ../../${ISL} isl
+    else
+        ln -s -f ../isl isl
+    fi
     cd ..
 }
 
