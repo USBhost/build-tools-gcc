@@ -363,10 +363,10 @@ function extract_sources() {
     extract ${GMP}.tar.xz ../${GMP}
     extract ${MPC}.tar.gz ../${MPC}
     extract ${GLIBC}.tar.xz ../${GLIBC}
+    if [[ ${VERSION} -le 5 ]] || [[ ${VERSION} -eq 7 ]]; then
+        extract ${ISL}.tar.xz ../${ISL}
+    fi
     if [[ ${TARBALLS} ]]; then
-        if [[ ${VERSION} -le 5 ]] || [[ ${VERSION} -eq 7 ]]; then
-            extract ${ISL}.tar.xz ../${ISL}
-        fi
         extract binutils-${BINUTILS}.tar.xz ../binutils
         extract ${GCC_TAR} ../gcc
         extract linux-${LINUX}.tar.xz ../linux
