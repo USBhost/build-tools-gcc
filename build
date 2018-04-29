@@ -292,9 +292,9 @@ function download_sources() {
         wget http://ftp.gnu.org/gnu/glibc/${GLIBC}.tar.xz
     fi
 
-    if [[ ${VERSION} -le 5 ]]; then
+    if [[ ${VERSION} -le 5 ]] || [[ ${VERSION} -eq 7 ]]; then
         if [[ ! -f ${ISL}.tar.xz ]]; then
-            header "DOWNLOADING ISL ${ISL} FOR GCC 5 AND LOWER"
+            header "DOWNLOADING ISL ${ISL} FOR GCC ${VERSION}"
             wget http://isl.gforge.inria.fr/${ISL}.tar.xz
         fi
     else
