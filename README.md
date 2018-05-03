@@ -1,6 +1,6 @@
 # GCC toolchain build script
 
-This is a script to build GCC toolchains targeting arm and arm64 devices
+This is a script to build GCC toolchains targeting arm, arm64, and x86 devices
 (primarily Android devices).
 
 
@@ -28,6 +28,9 @@ The printout will show you how to run the script.
 Example commands:
 
 ```bash
+# Build a Linaro 7.x toolchain for x86_64
+./build -a x86_64 -s linaro -v 7
+
 # Build a Linaro 7.x toolchain for arm64
 ./build -a arm64 -s linaro -v 7
 
@@ -80,6 +83,6 @@ accept a particular coding style:
 
 ## Credits/thanks
 
-+ [USBHost](https://github.com/USBhost): For the initial script
++ [nathanchance](https://github.com/nathanchance): For great modifications!
 + [frap129](https://github.com/frap129): For some modifications to update the script/components
 + [MSF-Jarvis](https://github.com/MSF-Jarvis): For testing the arm option
