@@ -1,7 +1,5 @@
 # GCC toolchain build script
 
-Support for this project has been discontinued. If anyone would like to take it over, let me know and I will direct people to that repo for support.
-
 This is a script to build GCC toolchains targeting arm and arm64 devices
 (primarily Android devices).
 
