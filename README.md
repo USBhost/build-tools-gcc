@@ -18,7 +18,7 @@ following:
 Once you have set up your environment, run the following:
 
 ```bash
-git clone https://github.com/nathanchance/build-tools-gcc
+git clone https://github.com/USBhost/build-tools-gcc
 cd build-tools-gcc
 ./build -h
 ```
