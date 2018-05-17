@@ -411,8 +411,9 @@ function update_repos() {
 
 
 # Setup source folders and build folders
-function setup_env() { #FIXME: i need to think though this more
-    INSTALL="$(pwd)/${TARGET}"
+function setup_env() {
+    ROOT=${PWD}
+    INSTALL=${ROOT}/${TARGET}
     PATH=${INSTALL}/bin:${PATH}
 
     if [[ ! -d gcc ]]; then
@@ -431,13 +432,13 @@ function setup_env() { #FIXME: i need to think though this more
     fi
 
     cd gcc
-    ln -s -f ../${MPFR} mpfr
-    ln -s -f ../${GMP} gmp
-    ln -s -f ../${MPC} mpc
-    if [[ ${TARBALLS} ]]; then #FIXME
-        ln -s -f ../${ISL} isl
+    ln -s -f ${ROOT}/${MPFR} mpfr
+    ln -s -f ${ROOT}/${GMP} gmp
+    ln -s -f ${ROOT}/${MPC} mpc
+    if [[ ${TARBALLS} ]]; then
+        ln -s -f ${ROOT}/${ISL} isl
     else
-        ln -s -f ../isl isl
+        ln -s -f ${ROOT}/isl isl
     fi
     cd ..
 }
