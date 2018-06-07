@@ -58,7 +58,7 @@ function help_menu() {
     echo "  -nt | --no-tmpfs:    Do not use tmpfs for building (useful if you don't have much RAM)."
     echo "  -nu | --no-update:   Do not update the downloaded components before building (useful if you have slow internet)."
     echo "  -p  | --package:     Possible values: gz or xz. Compresses toolchain after build."
-    echo "  -t  | --tarballs:    Use tarballs for the Linux kernel, binutils, and, GCC\n"
+    echo "  -t  | --tarballs:    Use tarballs for binutils, ISL, and, GCC\n"
 }
 
 
@@ -287,6 +287,11 @@ function download_sources() {
         wget https://ftp.gnu.org/gnu/glibc/${GLIBC}.tar.xz
     fi
 
+    if [[ ! -f linux-${LINUX}.tar.xz ]]; then
+        header "DOWNLOADING LINUX KERNEL"
+        wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-${LINUX}.tar.xz
+    fi
+
     if [[ ! ${TARBALLS} ]]; then
         if [[ ! -d binutils ]]; then
             header "DOWNLOADING BINUTILS"
@@ -301,11 +306,6 @@ function download_sources() {
         if [[ ! -d gcc ]]; then
             header "DOWNLOADING GCC"
             git clone https://git.linaro.org/toolchain/gcc.git -b ${GCC}
-        fi
-
-        if [[ ! -d linux ]]; then
-            header "DOWNLOADING LINUX KERNEL"
-            git clone https://github.com/torvalds/linux.git
         fi
     else
         if [[ ! -f binutils-${BINUTILS_tar}.tar.xz ]]; then
@@ -331,11 +331,6 @@ function download_sources() {
             fi
             GCC_TAR=gcc-${GCC}.tar.gz
         fi
-
-        if [[ ! -f linux-${LINUX}.tar.xz ]]; then
-            header "DOWNLOADING LINUX KERNEL"
-            wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-${LINUX}.tar.xz
-        fi
     fi
 
 }
@@ -354,11 +349,11 @@ function extract_sources() {
     extract ${GMP}.tar.xz ../${GMP}
     extract ${MPC}.tar.gz ../${MPC}
     extract ${GLIBC}.tar.xz ../${GLIBC}
+    extract linux-${LINUX}.tar.xz ../linux
     if [[ ${TARBALLS} ]]; then
         extract binutils-${BINUTILS_tar}.tar.xz ../binutils
         extract ${ISL}.tar.xz ../${ISL}
         extract ${GCC_TAR} ../gcc
-        extract linux-${LINUX}.tar.xz ../linux
     fi
 }
 
@@ -385,11 +380,6 @@ function update_repos() {
         git remote update
         git checkout ${GCC}
         git reset --hard origin/${GCC}
-        cd ..
-
-        cd linux
-        git remote update
-        git merge origin/master
         cd ..
     else
         [[ -d isl ]] && cd isl && ./autogen.sh && cd ..
