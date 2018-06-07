@@ -151,7 +151,7 @@ function setup_variables() {
     MPC="mpc-1.1.0"
     ISL="isl-0.19"
     GLIBC="glibc-2.27"
-    LINUX="4.16"
+    LINUX="4.17"
 
     # Start of script
     START=$(date +%s)
