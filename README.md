@@ -73,12 +73,13 @@ export CROSS_COMPILE=$(pwd)/bin/arm-linux-gnueabi-
 
 If you have any issues with this script, feel free to open an issue!
 
-Pull requests are more than welcome as well. However, I will only
-accept a particular coding style:
+Pull requests are more than welcome as well. However, there is a particular coding style that should be followed:
 
 + All variables are uppercased and use curly braces: ```${VARIABLE}``` instead of ```$variable```
 + Four spaces for indents
 + Double brackets and single equal sign for string comparisons in if blocks: ```if [[ ${VARIABLE} = "yes" ]]; then```
+
+Additionally, please be sure to run your change through shellcheck.net (either copy and paste the script there or download the binary and run `shellcheck -x -e SC1090 -e SC1091 -e SC1094 -e SC1117 -e SC2028 build`).
 
 
 ## Credits/thanks
