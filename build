@@ -1,23 +1,12 @@
 #!/usr/bin/env bash
 #
-# GCC cross compiler  compilation script
+# SPDX-License-Identifier: GPL-3.0-or-later
 #
 # Copyright (C) 2016-2018 USBhost
 # Copyright (C) 2016-2017 Joe Maples
-# Copyright (C) 2017 Nathan Chancellor
+# Copyright (C) 2017-2018 Nathan Chancellor
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>
+# GCC cross compiler  compilation script
 
 ###########
 # SOURCES #
@@ -40,7 +29,7 @@
 
 # Easy alias for escape codes
 function echo() {
-    command echo -e "$@"
+    command echo -e "${@}"
 }
 
 
@@ -48,8 +37,8 @@ function echo() {
 function help_menu() {
     echo
     echo "${BOLD}OVERVIEW:${RST} Build a gcc toolchain\n"
-    echo "${BOLD}USAGE:${RST} ./$(basename ${0}) <options>\n"
-    echo "${BOLD}EXAMPLE:${RST} ./$(basename ${0}) -a arm64 -s linaro -v 7\n"
+    echo "${BOLD}USAGE:${RST} ./$(basename "${0}") <options>\n"
+    echo "${BOLD}EXAMPLE:${RST} ./$(basename "${0}") -a arm64 -s linaro -v 7\n"
     echo "${BOLD}REQUIRED PARAMETERS:${RST}"
     echo "  -a  | --arch:        Possible values: arm, arm64, i686, or x86_64. This is the toolchain's target architecture."
     echo "  -s  | --source:      Possible values: gnu or linaro. This is the GCC source (GNU official vs. Linaro fork)."
@@ -64,18 +53,20 @@ function help_menu() {
 
 # Prints a formatted header to let the user know what's being done
 function header() {
-    echo ${RED}
+    echo "${RED}"
+    # shellcheck disable=SC2034
     echo "====$(for i in $(seq ${#1}); do echo "=\c"; done)===="
     echo "==  ${1}  =="
+    # shellcheck disable=SC2034
     echo "====$(for i in $(seq ${#1}); do echo "=\c"; done)===="
-    echo ${RST}
+    echo "${RST}"
 }
 
 
 # Prints an error in bold red
-function report_error() {
+function die() {
     echo ""
-    echo ${RED}"${1}"${RST}
+    echo "${RED}${1}${RST}"
     [[ ${2} =~ "-n" ]] && echo
     [[ ${2} =~ "-h" ]] && help_menu
     exit
@@ -83,20 +74,20 @@ function report_error() {
 
 
 # Prints a warning in bold yellow
-function report_warning() {
+function warn() {
     echo ""
-    echo ${YLW}"${1}"${RST}
+    echo "${YLW}${1}${RST}"
     [[ ${2} =~ "-n" ]] && echo
 }
 
 
 # Formats the time for the end
 function format_time() {
-    MINS=$(((${2}-${1})/60))
-    SECS=$(((${2}-${1})%60))
+    MINS=$(((${2} - ${1}) / 60))
+    SECS=$(((${2} - ${1}) % 60))
     if [[ ${MINS} -ge 60 ]]; then
-        HOURS=$((${MINS}/60))
-        MINS=$((${MINS}%60))
+        HOURS=$((MINS / 60))
+        MINS=$((MINS % 60))
     fi
 
     if [[ ${HOURS} -eq 1 ]]; then
@@ -121,7 +112,7 @@ function format_time() {
         TIME_STRING+=" AND ${SECS} SECONDS"
     fi
 
-    echo ${TIME_STRING}
+    echo "${TIME_STRING}"
 }
 
 
@@ -140,7 +131,7 @@ function setup_variables() {
     YLW="\033[01;33m"
 
     # Configuration variables
-    CONFIGURATION="--disable-multilib --disable-werror"
+    CONFIGURATION=( "--disable-multilib" "--disable-werror" )
     JOBS="-j$(nproc --all)"
 
     # Binary versions
@@ -160,7 +151,7 @@ function setup_variables() {
 
 # Parse parameters
 function parse_parameters() {
-    while [[ $# -ge 1 ]]; do
+    while [[ ${#} -ge 1 ]]; do
         case "${1}" in
             # REQUIRED FLAGS
             "-a"|"--arch") shift && ARCH=${1} ;;
@@ -186,13 +177,13 @@ function parse_parameters() {
         "arm64") TARGET="aarch64-linux-gnu" ;;
         "i686") TARGET="i686-linux-gnu" ;;
         "x86_64") TARGET="x86_64-linux-gnu" ;;
-        *) report_error "Absent or invalid arch specified!" -h ;;
+        *) die "Absent or invalid arch specified!" -h ;;
     esac
 
     if [[ ! ${TARBALLS} ]]; then
         # Set GCC branch based on version and Linaro or not
         case "${SOURCE}:${VERSION}" in
-            "gnu:4") report_error "Will not build, Use Linaro instead" ;;
+            "gnu:4") die "Will not build, Use Linaro instead" ;;
             "gnu:5") GCC=gcc-5-branch
                      ISL="isl-0.17.1" ;;
             "gnu:6") GCC=gcc-6-branch ;;
@@ -205,29 +196,29 @@ function parse_parameters() {
                         ISL="isl-0.17.1" ;;
             "linaro:6") GCC=linaro-local/gcc-6-integration-branch ;;
             "linaro:7") GCC=linaro-local/gcc-7-integration-branch ;;
-            "linaro:8") report_error "There's no such thing as Linaro 8.x Clannad..." -h ;;
-            "linaro:9") report_error "There's no such thing as Linaro 9.x Clannad..." -h ;;
-            *) report_error "Absent or invalid GCC version or source specified!" -h ;;
+            "linaro:8") die "There's no such thing as Linaro 8.x Clannad..." -h ;;
+            "linaro:9") die "There's no such thing as Linaro 9.x Clannad..." -h ;;
+            *) die "Absent or invalid GCC version or source specified!" -h ;;
         esac
     else
         # Set GCC branch based on version and Linaro or not
         case "${SOURCE}:${VERSION}" in
-            "gnu:4") report_error "Will not build, Use Linaro instead" ;;
+            "gnu:4") die "Will not build, Use Linaro instead" ;;
             "gnu:5") GCC=gcc-5.5.0
                      ISL="isl-0.17.1" ;;
             "gnu:6") GCC=gcc-6.4.0 ;;
             "gnu:7") GCC=gcc-7.3.0 ;;
             "gnu:8") GCC=gcc-8.1.0 ;;
-            "gnu:9") report_error "GCC 9.0 is currently a WIP so there is no tarball to download! Either use the git repo or choose a new version..." ;;
+            "gnu:9") die "GCC 9.0 is currently a WIP so there is no tarball to download! Either use the git repo or choose a new version..." ;;
             "linaro:4") GCC=linaro-4.9-2017.01
                         ISL="isl-0.17.1" ;;
             "linaro:5") GCC=linaro-5.5-2017.10
                         ISL="isl-0.17.1" ;;
             "linaro:6") GCC=linaro-snapshot-6.4-2018.06 ;;
             "linaro:7") GCC=linaro-snapshot-7.3-2018.06 ;;
-            "linaro:8") report_error "There's no such thing as Linaro 8.x Clannad..." -h ;;
-            "linaro:9") report_error "There's no such thing as Linaro 9.x Clannad..." -h ;;
-            *) report_error "Absent or invalid GCC version or source specified!" -h ;;
+            "linaro:8") die "There's no such thing as Linaro 8.x Clannad..." -h ;;
+            "linaro:9") die "There's no such thing as Linaro 9.x Clannad..." -h ;;
+            *) die "Absent or invalid GCC version or source specified!" -h ;;
         esac
     fi
 }
@@ -238,7 +229,9 @@ function clean_up() { #FIXME: we dont need to remove everything everytime.
     header "CLEANING UP"
 
     if [[ ${TMPFS} != false ]]; then
-        [[ check_sudo ]] && echo "Please enter your password at the following prompt. It is needed so we can unmount the build folders from tmpfs."
+        if check_sudo; then
+            echo "Please enter your password at the following prompt. It is needed so we can unmount the build folders from tmpfs."
+        fi
         sudo umount -f build-glibc 2>/dev/null
         sudo umount -f build-gcc 2>/dev/null
         sudo umount -f build-binutils 2>/dev/null
@@ -251,21 +244,19 @@ function clean_up() { #FIXME: we dont need to remove everything everytime.
        [[ -d build-glibc ]] ||
        [[ -d gcc ]] ||
        [[ -d linux ]] ||
-       [[ -f *linux-gnu* ]] ||
-       [[ -f *.tar.${COMPRESSION} ]]; then
+       [[ -f ${TARGET} ]] ||
+       [[ $(for FILE in *.tar.*; do if [[ -f "${FILE}" ]]; then echo "true"; break; else echo "false"; fi done) = "true" ]]; then
 
-        report_error "Clean up failed! Aborting. Try checking that you have proper permissions to delete files."
-
+        die "Clean up failed! Aborting. Try checking that you have proper permissions to delete files."
     else
         echo "Clean up successful!"
-
     fi
 }
 
 
 function download_sources() {
     mkdir -p sources
-    cd sources
+    cd sources || die "Failed to create sources directory!"
 
     if [[ ! -f ${MPFR}.tar.xz ]]; then
         header "DOWNLOADING MPR"
@@ -321,7 +312,7 @@ function download_sources() {
         if [[ ${SOURCE} == "gnu" ]]; then
             if [[ ! -f ${GCC}.tar.${EXT:-xz} ]]; then
                 header "DOWNLOADING GCC"
-                wget https://mirrors.kernel.org/gnu/gcc/${GCC}/${GCC}.tar.${EXT:-gz}
+                wget https://mirrors.kernel.org/gnu/gcc/${GCC}/${GCC}.tar."${EXT:-gz}"
             fi
             GCC_TAR=${GCC}.tar.${EXT:-gz}
         else
@@ -337,8 +328,8 @@ function download_sources() {
 
 
 function extract() {
-    mkdir -p ${2}
-    tar xfk ${1} -C ${2} --strip-components=1
+    mkdir -p "${2}"
+    tar xfk "${1}" -C "${2}" --strip-components=1
 }
 
 
@@ -362,41 +353,39 @@ function extract_sources() {
 function update_repos() {
     if [[ ! ${UPDATE} && ! ${TARBALLS} ]]; then
         header "UPDATING SOURCES"
-
-        cd isl
-        git remote update
-        git checkout ${ISL}
-        git reset --hard HEAD
-        ./autogen.sh
-        cd ..
-
-        cd binutils
-        git remote update
-        git checkout ${BINUTILS_git}
-        git reset --hard origin/${BINUTILS_git}
-        cd ..
-
-        cd gcc
-        git remote update
-        git checkout ${GCC}
-        git reset --hard origin/${GCC}
-        cd ..
+        (
+            cd isl || die "ISL did not get cloned properly!"
+            git remote update
+            git checkout ${ISL}
+            git reset --hard HEAD
+            ./autogen.sh
+        )
+        (
+            cd binutils || die "binutils did not get cloned properly!"
+            git remote update
+            git checkout ${BINUTILS_git}
+            git reset --hard origin/${BINUTILS_git}
+        )
+        (
+            cd gcc || die "GCC did not get cloned properly!"
+            git remote update
+            git checkout ${GCC}
+            git reset --hard origin/${GCC}
+        )
     else
-        [[ -d isl ]] && cd isl && ./autogen.sh && cd ..
+        if [[ -d isl ]]; then
+            (
+                cd isl || die "ISL did not get downloaded properly!"
+                ./autogen.sh
+            )
+        fi
     fi
 
     cd ..
-    if [[ ! -d linux ]]; then
-        ln -s sources/linux linux
-    fi
 
-    if [[ ! -d binutils ]]; then
-        ln -s sources/binutils binutils
-    fi
-
-    if [[ ! -d gcc ]]; then
-        ln -s sources/gcc gcc
-    fi
+    [[ ! -d linux ]] && ln -s sources/linux linux
+    [[ ! -d binutils ]] && ln -s sources/binutils binutils
+    [[ ! -d gcc ]] && ln -s sources/gcc gcc
 }
 
 
@@ -406,29 +395,29 @@ function setup_env() {
     INSTALL=${ROOT}/${TARGET}
     PATH=${INSTALL}/bin:${PATH}
 
-    if [[ ! -d gcc ]]; then
-        report_error "GCC source is missing! Please check your connection and rerun the script!" -h
-    fi
+    [[ ! -d gcc ]] && die "GCC source is missing! Please check your connection and rerun the script!" -h
 
     mkdir build-glibc
     mkdir build-gcc
     mkdir build-binutils
 
     if [[ ${TMPFS} != false ]]; then
-        [[ check_sudo ]] && echo "Please enter your password at the following prompt. It is needed so we can mount some folders on tmpfs."
+        if check_sudo; then
+            echo "Please enter your password at the following prompt. It is needed so we can mount some folders on tmpfs."
+        fi
         sudo mount -t tmpfs -o rw none build-glibc
         sudo mount -t tmpfs -o rw none build-gcc
         sudo mount -t tmpfs -o rw none build-binutils
     fi
 
-    cd gcc
-    ln -s -f ${ROOT}/${MPFR} mpfr
-    ln -s -f ${ROOT}/${GMP} gmp
-    ln -s -f ${ROOT}/${MPC} mpc
+    cd gcc || die "GCC folder does not exit!"
+    ln -s -f "${ROOT}/${MPFR}" mpfr
+    ln -s -f "${ROOT}/${GMP}" gmp
+    ln -s -f "${ROOT}/${MPC}" mpc
     if [[ ${TARBALLS} ]]; then
-        ln -s -f ${ROOT}/${ISL} isl
+        ln -s -f "${ROOT}/${ISL}" isl
     else
-        ln -s -f ${ROOT}/isl isl
+        ln -s -f "${ROOT}/isl" isl
     fi
     cd ..
 }
@@ -437,39 +426,39 @@ function setup_env() {
 # Build binutils
 function build_binutils() {
     header "BUILDING BINUTILS"
-    cd build-binutils
-    ../binutils/configure ${CONFIGURATION} \
+    cd build-binutils || die "binutils build folder does not exist!"
+    ../binutils/configure "${CONFIGURATION[@]}" \
                           --target=${TARGET} \
-                          --prefix=${INSTALL} \
+                          --prefix="${INSTALL}" \
                           --disable-gdb
-    make ${JOBS} || report_error "Error while building binutils!" -n
-    make install ${JOBS} || report_error "Error while installing binutils!" -n
+    make ${JOBS} || die "Error while building binutils!" -n
+    make install ${JOBS} || die "Error while installing binutils!" -n
 }
 
 
 # Make Linux kernel headers
 function build_headers() {
     header "MAKING LINUX HEADERS"
-    cd ../linux
-    make ARCH=${ARCH} \
-        INSTALL_HDR_PATH=${INSTALL}/${TARGET} \
-        headers_install ${JOBS} || report_error "Error while building/installing Linux headers!" -n
+    cd ../linux || die "Linux kernel folder does not exist!"
+    make ARCH="${ARCH}" \
+        INSTALL_HDR_PATH="${INSTALL}/${TARGET}" \
+        headers_install ${JOBS} || die "Error while building/installing Linux headers!" -n
 }
 
 
 # Build GCC
 function build_gcc() {
     header "MAKING GCC"
-    cd ../build-gcc
-    ../gcc/configure ${CONFIGURATION} \
+    cd ../build-gcc || die "GCC build folder does not exist!"
+    ../gcc/configure "${CONFIGURATION[@]}" \
                      --enable-languages=c \
                      --target=${TARGET} \
-                     --prefix=${INSTALL}
-    make all-gcc ${JOBS} || report_error "Error while building gcc!" -n
-    make install-gcc ${JOBS} || report_error "Error while installing gcc!" -n
+                     --prefix="${INSTALL}"
+    make all-gcc ${JOBS} || die "Error while building gcc!" -n
+    make install-gcc ${JOBS} || die "Error while installing gcc!" -n
     if [[ ${ARCH} = "x86_64" ]]; then
-        make all-target-libgcc ${JOBS} || report_error "Error while installing libgcc for host!" -n
-        make install-target-libgcc ${JOBS} || report_error "Error while installing libgcc for target!" -n
+        make all-target-libgcc ${JOBS} || die "Error while installing libgcc for host!" -n
+        make install-target-libgcc ${JOBS} || die "Error while installing libgcc for target!" -n
     fi
 }
 
@@ -477,29 +466,29 @@ function build_gcc() {
 # Build glibc
 function build_glibc() {
     header "MAKING GLIBC"
-    cd ../build-glibc
-    ../${GLIBC}/configure --prefix=${INSTALL}/${TARGET} \
-                          --build=${MACHTYPE} \
+    cd ../build-glibc || die "glibc build folder does not exist!"
+    ../${GLIBC}/configure --prefix="${INSTALL}/${TARGET}" \
+                          --build="${MACHTYPE}" \
                           --host=${TARGET} \
                           --target=${TARGET} \
-                          --with-headers=${INSTALL}/${TARGET}/include \
-                          ${CONFIGURATION} libc_cv_forced_unwind=yes
-    make install-bootstrap-headers=yes install-headers ${JOBS} || report_error "Error installing headers for glibc!" -n
-    make csu/subdir_lib ${JOBS} || report_error "Error while making subdir_lib for glibc!" -n
-    install csu/crt1.o csu/crti.o csu/crtn.o ${INSTALL}/${TARGET}/lib
-    ${TARGET}-gcc -nostdlib -nostartfiles -shared -x c /dev/null -o ${INSTALL}/${TARGET}/lib/libc.so
-    touch ${INSTALL}/${TARGET}/include/gnu/stubs.h
+                          --with-headers="${INSTALL}/${TARGET}/include" \
+                          "${CONFIGURATION[@]}" libc_cv_forced_unwind=yes
+    make install-bootstrap-headers=yes install-headers ${JOBS} || die "Error installing headers for glibc!" -n
+    make csu/subdir_lib ${JOBS} || die "Error while making subdir_lib for glibc!" -n
+    install csu/crt1.o csu/crti.o csu/crtn.o "${INSTALL}/${TARGET}/lib"
+    ${TARGET}-gcc -nostdlib -nostartfiles -shared -x c /dev/null -o "${INSTALL}/${TARGET}/lib/libc.so"
+    touch "${INSTALL}/${TARGET}/include/gnu/stubs.h"
     if [[ ${ARCH} = "x86_64" || ${ARCH} = "i686" ]]; then
-        make ${JOBS} || report_error "Error while building glibc for the host!" -n
-        make install ${JOBS} || report_error "Error while installing glibc for the host!" -n
+        make ${JOBS} || die "Error while building glibc for the host!" -n
+        make install ${JOBS} || die "Error while installing glibc for the host!" -n
     else
-        cd ../build-gcc
-        make all-target-libgcc ${JOBS} || report_error "Error while building libgcc for target!" -n
-        make install-target-libgcc ${JOBS} || report_error "Error while installing libgcc for target!" -n
+        cd ../build-gcc || die "GCC build folder does not exist!"
+        make all-target-libgcc ${JOBS} || die "Error while building libgcc for target!" -n
+        make install-target-libgcc ${JOBS} || die "Error while installing libgcc for target!" -n
 
-        cd ../build-glibc
-        make ${JOBS} || report_error "Error while building glibc for target" -n
-        make install ${JOBS} || report_error "Error while installing glibc for target" -n
+        cd ../build-glibc || die "glibc build folder does not exist!"
+        make ${JOBS} || die "Error while building glibc for target" -n
+        make install ${JOBS} || die "Error while installing glibc for target" -n
     fi
 }
 
@@ -507,9 +496,9 @@ function build_glibc() {
 # Install GCC
 function install_gcc() {
     header "INSTALLING GCC"
-    cd ../build-gcc
-    make all ${JOBS} || report_error "Error while compiling final toolchain!" -n
-    make install ${JOBS} || report_error "Error while installing final toolchain!" -n
+    cd ../build-gcc || die "GCC build folder does not exist!"
+    make all ${JOBS} || die "Error while compiling final toolchain!" -n
+    make install ${JOBS} || die "Error while installing final toolchain!" -n
     cd ..
 }
 
@@ -517,7 +506,9 @@ function install_gcc() {
 # Unmount tmpfs
 function unmount_tmpfs() {
     if [[ ${TMPFS} != false ]]; then
-        [[ check_sudo ]] && echo "Please enter your password at the following prompt. It is needed so we can unmount the build folders from tmpfs.";
+        if check_sudo; then
+            echo "Please enter your password at the following prompt. It is needed so we can unmount the build folders from tmpfs."
+        fi
         sudo umount -f build-glibc
         sudo umount -f build-gcc
         sudo umount -f build-binutils
@@ -537,12 +528,12 @@ function package_tc() {
         case "${COMPRESSION}" in
             "gz")
                 echo "Packaging with GZIP..."
-                GZ_OPT=-9 tar -zcf ${PACKAGE} ${TARGET} ;;
+                GZ_OPT=-9 tar -zcf "${PACKAGE}" ${TARGET} ;;
             "xz")
                 echo "Packaging with XZ..."
-                XZ_OPT=-9 tar -Jcf ${PACKAGE} ${TARGET} ;;
+                XZ_OPT=-9 tar -Jcf "${PACKAGE}" ${TARGET} ;;
             *)
-                report_error "Invalid compression specified... skipping" ;;
+                die "Invalid compression specified... skipping" ;;
         esac
     fi
 }
@@ -554,11 +545,11 @@ function ending_info() {
 
     if [[ -e ${TARGET}/bin/${TARGET}-gcc ]]; then
         header "BUILD SUCCESSFUL"
-        echo "${BOLD}Script duration:${RST} $(format_time ${START} ${END})"
+        echo "${BOLD}Script duration:${RST} $(format_time "${START}" "${END}")"
         echo "${BOLD}GCC version:${RST} $(${TARGET}/bin/${TARGET}-gcc --version | head -n 1)"
         if [[ -n ${COMPRESSION} ]] && [[ -e ${PACKAGE} ]]; then
             echo "${BOLD}File location:${RST} $(pwd)/${PACKAGE}"
-            echo "${BOLD}File size:${RST} $(du -h ${PACKAGE} | awk '{print $1}')"
+            echo "${BOLD}File size:${RST} $(du -h "${PACKAGE}" | awk '{print $1}')"
         else
             echo "${BOLD}Toolchain location:${RST} $(pwd)/${TARGET}"
         fi
@@ -572,7 +563,7 @@ function ending_info() {
 
 
 setup_variables
-parse_parameters $@
+parse_parameters "${@}"
 clean_up
 download_sources
 extract_sources
