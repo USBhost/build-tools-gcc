@@ -133,7 +133,7 @@ function setup_variables() {
 
     # Configuration variables
     CONFIGURATION=( "--disable-multilib" "--disable-werror" )
-    JOBS="-j$(nproc --all)"
+    JOBS="-j$(($(nproc --all) + 1))"
 
     # Binary versions
     BINUTILS_git="binutils-2_30-branch"
