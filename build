@@ -8,6 +8,7 @@
 #
 # GCC cross compiler  compilation script
 
+
 ###########
 # SOURCES #
 ###########
@@ -37,8 +38,8 @@ function echo() {
 function help_menu() {
     echo
     echo "${BOLD}OVERVIEW:${RST} Build a gcc toolchain\n"
-    echo "${BOLD}USAGE:${RST} ./$(basename "${0}") <options>\n"
-    echo "${BOLD}EXAMPLE:${RST} ./$(basename "${0}") -a arm64 -s linaro -v 7\n"
+    echo "${BOLD}USAGE:${RST} "${0}" <options>\n"
+    echo "${BOLD}EXAMPLE:${RST} "${0}" -a arm64 -s linaro -v 7\n"
     echo "${BOLD}REQUIRED PARAMETERS:${RST}"
     echo "  -a  | --arch:        Possible values: arm, arm64, i686, or x86_64. This is the toolchain's target architecture."
     echo "  -s  | --source:      Possible values: gnu or linaro. This is the GCC source (GNU official vs. Linaro fork)."
