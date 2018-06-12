@@ -244,7 +244,7 @@ function clean_up() { #FIXME: we dont need to remove everything everytime.
         sudo umount -f build-gcc 2>/dev/null
         sudo umount -f build-binutils 2>/dev/null
     fi
-    git clean -fxdq -e sources
+    git clean -fxdq -e sources -e prebuilts
     find . -maxdepth 1 -type l -exec rm -rf {} \; #FIXME
     if [[ -d binutils ]] ||
        [[ -d build-binutils ]] ||
@@ -262,33 +262,73 @@ function clean_up() { #FIXME: we dont need to remove everything everytime.
 }
 
 
-function download_sources() {
+function build_binaries() {
+    ROOT=${PWD}
+    PREBUILTS_BIN=${ROOT}/prebuilts/bin
     mkdir -p sources
+
+    if [[ ! -f ${PREBUILTS_BIN}/axel ]]; then
+        AXEL=${ROOT}/sources/axel
+        [[ ! -d ${AXEL} ]] && git -C "$(dirname "${AXEL}")" clone --depth=1 https://github.com/axel-download-accelerator/axel
+        git -C "${AXEL}" clean -fxdq
+        git -C "${AXEL}" pull
+        (
+            cd "${AXEL}"
+            ./autogen.sh
+            ./configure --prefix="$(dirname "${PREBUILTS_BIN}")"
+            make ${JOBS} || die "Error building axel!"
+            make ${JOBS} install || die "Error installing axel!"
+        )
+    fi
+
+    if [[ ! -f ${PREBUILTS_BIN}/pigz ]]; then
+        PIGZ=${ROOT}/sources/pigz
+        [[ ! -d ${PIGZ} ]] && git -C "$(dirname "${PIGZ}")" clone --depth=1 https://github.com/madler/pigz
+        git -C "${PIGZ}" clean -fxdq
+        git -C "${PIGZ}" pull
+        make -C "${PIGZ}" ${JOBS} pigz || die "Error building pigz!"
+        mv "${PIGZ}"/pigz "${PREBUILTS_BIN}"
+    fi
+
+    if [[ ! -f ${PREBUILTS_BIN}/pxz ]]; then
+        PXZ=${ROOT}/sources/pxz
+        [[ ! -d ${PXZ} ]] && git -C "$(dirname "${PXZ}")" clone --depth=1 https://github.com/jnovy/pxz
+        git -C "${PXZ}" clean -fxdq
+        git -C "${PXZ}" pull
+        make -C "${PXZ}" ${JOBS} pxz || die "Error building pxz!"
+        mv "${PXZ}"/pxz "${PREBUILTS_BIN}"
+    fi
+
+    export PATH=${PREBUILTS_BIN}:${PATH}
+}
+
+
+function download_sources() {
     cd sources || die "Failed to create sources directory!"
 
     if [[ ! -f ${MPFR}.tar.xz ]]; then
         header "DOWNLOADING MPR"
-        wget http://www.mpfr.org/mpfr-current/${MPFR}.tar.xz
+        axel https://www.mpfr.org/mpfr-current/${MPFR}.tar.xz
     fi
 
     if [[ ! -f ${GMP}.tar.xz ]]; then
         header "DOWNLOADING GMP"
-        wget ftp://ftp.gnu.org/gnu/gmp/${GMP}.tar.xz
+        axel https://ftp.gnu.org/gnu/gmp/${GMP}.tar.xz
     fi
 
     if [[ ! -f ${MPC}.tar.gz ]]; then
         header "DOWNLOADING MPC"
-        wget ftp://ftp.gnu.org/gnu/mpc/${MPC}.tar.gz
+        axel https://ftp.gnu.org/gnu/mpc/${MPC}.tar.gz
     fi
 
     if [[ ! -f ${GLIBC}.tar.xz ]]; then
         header "DOWNLOADING GLIBC"
-        wget https://ftp.gnu.org/gnu/glibc/${GLIBC}.tar.xz
+        axel https://ftp.gnu.org/gnu/glibc/${GLIBC}.tar.xz
     fi
 
     if [[ ! -f linux-${LINUX}.tar.xz ]]; then
         header "DOWNLOADING LINUX KERNEL"
-        wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-${LINUX}.tar.xz
+        axel https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-${LINUX}.tar.xz
     fi
 
     if [[ ! ${TARBALLS} ]]; then
@@ -309,24 +349,24 @@ function download_sources() {
     else
         if [[ ! -f binutils-${BINUTILS_tar}.tar.xz ]]; then
             header "DOWNLOADING BINUTILS"
-            wget http://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_tar}.tar.xz
+            axel https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_tar}.tar.xz
         fi
 
         if [[ ! -f ${ISL}.tar.xz ]]; then
             header "DOWNLOADING ISL ${ISL} FOR GCC ${VERSION}"
-            wget http://isl.gforge.inria.fr/${ISL}.tar.xz
+            axel https://isl.gforge.inria.fr/${ISL}.tar.xz
         fi
 
         if [[ ${SOURCE} == "gnu" ]]; then
             if [[ ! -f ${GCC}.tar.${EXT:-xz} ]]; then
                 header "DOWNLOADING GCC"
-                wget https://mirrors.kernel.org/gnu/gcc/${GCC}/${GCC}.tar."${EXT:-gz}"
+                axel https://mirrors.kernel.org/gnu/gcc/${GCC}/${GCC}.tar."${EXT:-gz}"
             fi
             GCC_TAR=${GCC}.tar.${EXT:-gz}
         else
             if [[ ! -f gcc-${GCC}.tar.gz ]]; then
                 header "DOWNLOADING GCC"
-                wget https://git.linaro.org/toolchain/gcc.git/snapshot/gcc-${GCC}.tar.gz
+                axel https://git.linaro.org/toolchain/gcc.git/snapshot/gcc-${GCC}.tar.gz
             fi
             GCC_TAR=gcc-${GCC}.tar.gz
         fi
@@ -336,8 +376,12 @@ function download_sources() {
 
 
 function extract() {
+    case "${1}" in
+        *.gz) UNPACK=pigz ;;
+        *.xz) UNPACK=pxz ;;
+    esac
     mkdir -p "${2}"
-    tar xfk "${1}" -C "${2}" --strip-components=1
+    ${UNPACK} -d < "${1}" | tar -xC "${2}" --strip-components=1
 }
 
 
@@ -399,9 +443,8 @@ function update_repos() {
 
 # Setup source folders and build folders
 function setup_env() {
-    ROOT=${PWD}
     INSTALL=${ROOT}/${TARGET}
-    PATH=${INSTALL}/bin:${PATH}
+    export PATH=${INSTALL}/bin:${PATH}
 
     [[ ! -d gcc ]] && die "GCC source is missing! Please check your connection and rerun the script!" -h
 
@@ -536,10 +579,10 @@ function package_tc() {
         case "${COMPRESSION}" in
             "gz")
                 echo "Packaging with GZIP..."
-                GZ_OPT=-9 tar -zcf "${PACKAGE}" ${TARGET} ;;
+                GZ_OPT=-9 tar -c --use-compress-program=pigz -f "${PACKAGE}" ${TARGET} ;;
             "xz")
                 echo "Packaging with XZ..."
-                XZ_OPT=-9 tar -Jcf "${PACKAGE}" ${TARGET} ;;
+                XZ_OPT=-9 tar -c --use-compress-program=pxz -f "${PACKAGE}" ${TARGET} ;;
             *)
                 die "Invalid compression specified... skipping" ;;
         esac
@@ -574,6 +617,7 @@ function ending_info() {
 setup_variables
 parse_parameters "${@}"
 clean_up
+build_binaries
 download_sources
 extract_sources
 update_repos
