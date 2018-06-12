@@ -45,6 +45,7 @@ function help_menu() {
     echo "  -s  | --source:      Possible values: gnu or linaro. This is the GCC source (GNU official vs. Linaro fork)."
     echo "  -v  | --version:     Possible values: (4, 5, 6, 7, 8*, and 9* [*GNU only]). This is the GCC version to build.\n"
     echo "${BOLD}OPTIONAL PARAMETERS:${RST}"
+    echo "  -f  | --full-src:    Download full git repos instead of shallow clones"
     echo "  -nt | --no-tmpfs:    Do not use tmpfs for building (useful if you don't have much RAM)."
     echo "  -nu | --no-update:   Do not update the downloaded components before building (useful if you have slow internet)."
     echo "  -p  | --package:     Possible values: gz or xz. Compresses toolchain after build."
@@ -160,6 +161,7 @@ function parse_parameters() {
             "-v"|"--version") shift && VERSION=${1} ;;
 
             # OPTIONAL FLAGS
+            "-f"|"--full-src") FULL_SOURCE=true ;;
             "-nt"|"--no-tmpfs") TMPFS=false ;;
             "-nu"|"--no-update") UPDATE=false ;;
             "-p"|"--package") shift && COMPRESSION=${1} ;;
@@ -287,17 +289,17 @@ function download_sources() {
     if [[ ! ${TARBALLS} ]]; then
         if [[ ! -d binutils ]]; then
             header "DOWNLOADING BINUTILS"
-            git clone https://git.linaro.org/toolchain/binutils-gdb.git binutils -b ${BINUTILS_git}
+            git clone ${FULL_SOURCE:- "--depth=1"} https://git.linaro.org/toolchain/binutils-gdb.git binutils -b ${BINUTILS_git}
         fi
 
         if [[ ! -d isl ]]; then
             header "DOWNLOADING ISL"
-            git clone git://repo.or.cz/isl.git -b ${ISL}
+            git clone ${FULL_SOURCE:- "--depth=1"} git://repo.or.cz/isl.git -b ${ISL}
         fi
 
         if [[ ! -d gcc ]]; then
             header "DOWNLOADING GCC"
-            git clone https://git.linaro.org/toolchain/gcc.git -b ${GCC}
+            git clone ${FULL_SOURCE:- "--depth=1"} https://git.linaro.org/toolchain/gcc.git -b ${GCC}
         fi
     else
         if [[ ! -f binutils-${BINUTILS_tar}.tar.xz ]]; then
