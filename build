@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1117
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
@@ -37,20 +38,25 @@ function echo() {
 # Help menu function
 function help_menu() {
     echo
-    echo "${BOLD}OVERVIEW:${RST} Build a gcc toolchain\n"
-    echo "${BOLD}USAGE:${RST} "${0}" <options>\n"
-    echo "${BOLD}EXAMPLE:${RST} "${0}" -a arm64 -s linaro -v 7\n"
+    echo "${BOLD}OVERVIEW:${RST} Build a gcc toolchain"
+    echo
+    echo "${BOLD}USAGE:${RST} ${0} <options>"
+    echo
+    echo "${BOLD}EXAMPLE:${RST} ${0} -a arm64 -s linaro -v 7"
+    echo
     echo "${BOLD}REQUIRED PARAMETERS:${RST}"
     echo "  -a  | --arch:        Possible values: arm, arm64, i686, or x86_64. This is the toolchain's target architecture."
     echo "  -s  | --source:      Possible values: gnu or linaro. This is the GCC source (GNU official vs. Linaro fork)."
-    echo "  -v  | --version:     Possible values: (4, 5, 6, 7, 8*, and 9* [*GNU only]). This is the GCC version to build.\n"
+    echo "  -v  | --version:     Possible values: (4, 5, 6, 7, 8*, and 9* [*GNU only]). This is the GCC version to build."
+    echo
     echo "${BOLD}OPTIONAL PARAMETERS:${RST}"
     echo "  -f  | --full-src:    Download full git repos instead of shallow clones"
     echo "  -nt | --no-tmpfs:    Do not use tmpfs for building (useful if you don't have much RAM)."
     echo "  -nu | --no-update:   Do not update the downloaded components before building (useful if you have slow internet)."
     echo "  -p  | --package:     Possible values: gz or xz. Compresses toolchain after build."
     echo "  -t  | --tarballs:    Use tarballs for binutils, ISL, and, GCC"
-    echo "  -V  | --verbose:     Make script print all output, not just errors and the ending information\n"
+    echo "  -V  | --verbose:     Make script print all output, not just errors and the ending information"
+    echo
 }
 
 
@@ -273,7 +279,7 @@ function build_binaries() {
         git -C "${AXEL}" clean -fxdq
         git -C "${AXEL}" pull
         (
-            cd "${AXEL}"
+            cd "${AXEL}" || die "Issue with cloning axel source!"
             ./autogen.sh
             ./configure --prefix="$(dirname "${PREBUILTS_BIN}")"
             make ${JOBS} || die "Error building axel!"
