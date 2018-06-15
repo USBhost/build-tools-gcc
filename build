@@ -426,9 +426,12 @@ function update_repos() {
         )
         (
             cd gcc || die "GCC did not get cloned properly!"
-            git remote update
-            git checkout ${GCC}
-            git reset --hard origin/${GCC}
+            [[ ${FULL_SOURCE} ]] && BRANCH=origin/${GCC} || BRANCH=FETCH_HEAD
+            git fetch ${FULL_SOURCE:- "--depth=1"} origin ${GCC}
+            if ! git checkout ${GCC}; then
+                git checkout -b ${GCC} ${BRANCH}
+            fi
+            git reset --hard ${BRANCH}
         )
     else
         if [[ -d isl ]]; then
