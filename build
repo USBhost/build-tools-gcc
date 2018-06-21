@@ -295,6 +295,19 @@ function build_binaries() {
     PREBUILTS_BIN=${ROOT}/prebuilts/bin
     mkdir -p sources
 
+    if [[ ! -f ${PREBUILTS_BIN}/txt2man ]]; then
+        TXT2MAN=${ROOT}/sources/txt2man
+        [[ ! -d ${TXT2MAN} ]] && git -C "$(dirname "${TXT2MAN}")" clone --depth=1 https://github.com/mvertes/txt2man
+        git -C "${TXT2MAN}" clean -fxdq
+        git -C "${TXT2MAN}" pull
+        (
+            cd "${TXT2MAN}" || die "Issue with cloning txt2man source!"
+            make prefix="$(dirname "${PREBUILTS_BIN}")" install || die "Error installing txt2man!"
+        )
+    fi
+
+    export PATH=${PREBUILTS_BIN}:${PATH}
+
     if [[ ! -f ${PREBUILTS_BIN}/axel ]]; then
         AXEL=${ROOT}/sources/axel
         [[ ! -d ${AXEL} ]] && git -C "$(dirname "${AXEL}")" clone --depth=1 https://github.com/axel-download-accelerator/axel
@@ -326,8 +339,6 @@ function build_binaries() {
         make -C "${PXZ}" ${JOBS} pxz || die "Error building pxz!"
         mv "${PXZ}"/pxz "${PREBUILTS_BIN}"
     fi
-
-    export PATH=${PREBUILTS_BIN}:${PATH}
 }
 
 
