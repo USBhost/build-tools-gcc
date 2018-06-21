@@ -335,7 +335,7 @@ function download_sources() {
     cd sources || die "Failed to create sources directory!"
 
     if [[ ! -f ${MPFR}.tar.xz ]]; then
-        header "DOWNLOADING MPR"
+        header "DOWNLOADING MPFR"
         axel https://www.mpfr.org/mpfr-current/${MPFR}.tar.xz
     fi
 
