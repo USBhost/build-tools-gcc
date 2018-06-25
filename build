@@ -360,7 +360,7 @@ function download_sources() {
 
         if [[ ! -f ${ISL}.tar.xz ]]; then
             header "DOWNLOADING ISL ${ISL} FOR GCC ${VERSION}"
-            axel https://isl.gforge.inria.fr/${ISL}.tar.xz
+            axel http://isl.gforge.inria.fr/${ISL}.tar.xz
         fi
 
         if [[ ${SOURCE} == "gnu" ]]; then
