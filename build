@@ -421,9 +421,12 @@ function update_repos() {
         )
         (
             cd binutils || die "binutils did not get cloned properly!"
-            git remote update
-            git checkout ${BINUTILS_git}
-            git reset --hard origin/${BINUTILS_git}
+            [[ ${FULL_SOURCE} ]] && BRANCH=origin/${BINUTILS_git} || BRANCH=FETCH_HEAD
+            git fetch ${QUIET_FLAG:+ "--depth=1"} origin ${BINUTILS_git}
+            if ! git checkout ${BINUTILS_git}; then
+                git checkout -b ${BINUTILS_git} ${BRANCH}
+            fi
+            git reset --hard ${BRANCH}
         )
         (
             cd gcc || die "GCC did not get cloned properly!"
