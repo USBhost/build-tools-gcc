@@ -184,6 +184,7 @@ function parse_parameters() {
     done
 
     [[ ! ${VERBOSE} ]] && exec 6>&2 5>&1 &>/dev/null
+    [[ ! ${FULL_SOURCE} ]] && DEPTH_FLAG=true
 
     # Default values
     case "${ARCH}" in
@@ -340,17 +341,17 @@ function download_sources() {
     if [[ ! ${TARBALLS} ]]; then
         if [[ ! -d binutils ]]; then
             header "DOWNLOADING BINUTILS"
-            git clone ${FULL_SOURCE:- "--depth=1"} https://git.linaro.org/toolchain/binutils-gdb.git binutils -b ${BINUTILS_git}
+            git clone ${DEPTH_FLAG:+ "--depth=1"} https://git.linaro.org/toolchain/binutils-gdb.git binutils -b ${BINUTILS_git}
         fi
 
         if [[ ! -d isl ]]; then
             header "DOWNLOADING ISL"
-            git clone ${FULL_SOURCE:- "--depth=1"} git://repo.or.cz/isl.git -b ${ISL}
+            git clone ${DEPTH_FLAG:+ "--depth=1"} git://repo.or.cz/isl.git -b ${ISL}
         fi
 
         if [[ ! -d gcc ]]; then
             header "DOWNLOADING GCC"
-            git clone ${FULL_SOURCE:- "--depth=1"} https://git.linaro.org/toolchain/gcc.git -b ${GCC}
+            git clone ${DEPTH_FLAG:+ "--depth=1"} https://git.linaro.org/toolchain/gcc.git -b ${GCC}
         fi
     else
         if [[ ! -f binutils-${BINUTILS_tar}.tar.xz ]]; then
@@ -427,7 +428,7 @@ function update_repos() {
         (
             cd gcc || die "GCC did not get cloned properly!"
             [[ ${FULL_SOURCE} ]] && BRANCH=origin/${GCC} || BRANCH=FETCH_HEAD
-            git fetch ${FULL_SOURCE:- "--depth=1"} origin ${GCC}
+            git fetch ${DEPTH_FLAG:+ "--depth=1"} origin ${GCC}
             if ! git checkout ${GCC}; then
                 git checkout -b ${GCC} ${BRANCH}
             fi
