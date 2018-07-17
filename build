@@ -74,7 +74,7 @@ function header() {
 
 # Prints an error in bold red
 function die() {
-    [[ ! ${VERBOSE} ]] && exec 1>&5 2>&6
+    [[ -z ${VERBOSE} ]] && exec 1>&5 2>&6
     echo ""
     echo "${RED}${1}${RST}"
     [[ ${2} =~ "-n" ]] && echo
@@ -183,8 +183,8 @@ function parse_parameters() {
         shift
     done
 
-    [[ ! ${VERBOSE} ]] && exec 6>&2 5>&1 &>/dev/null
-    [[ ! ${FULL_SOURCE} ]] && DEPTH_FLAG=true
+    [[ -z ${VERBOSE} ]] && exec 6>&2 5>&1 &>/dev/null
+    [[ -z ${FULL_SOURCE} ]] && DEPTH_FLAG=true
 
     # Default values
     case "${ARCH}" in
@@ -195,7 +195,7 @@ function parse_parameters() {
         *) die "Absent or invalid arch specified!" -h ;;
     esac
 
-    if [[ ! ${TARBALLS} ]]; then
+    if [[ -z ${TARBALLS} ]]; then
         # Set GCC branch based on version and Linaro or not
         case "${SOURCE}:${VERSION}" in
             "gnu:4") die "Will not build, Use Linaro instead" ;;
@@ -338,7 +338,7 @@ function download_sources() {
         axel https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-${LINUX}.tar.xz
     fi
 
-    if [[ ! ${TARBALLS} ]]; then
+    if [[ -z ${TARBALLS} ]]; then
         if [[ ! -d binutils ]]; then
             header "DOWNLOADING BINUTILS"
             git clone ${DEPTH_FLAG:+ "--depth=1"} https://git.linaro.org/toolchain/binutils-gdb.git binutils -b ${BINUTILS_git}
@@ -400,7 +400,7 @@ function extract_sources() {
     extract ${MPC}.tar.gz ../${MPC}
     extract ${GLIBC}.tar.xz ../${GLIBC}
     extract linux-${LINUX}.tar.xz ../linux
-    if [[ ${TARBALLS} ]]; then
+    if [[ -n ${TARBALLS} ]]; then
         extract binutils-${BINUTILS_tar}.tar.xz ../binutils
         extract ${ISL}.tar.xz ../${ISL}
         extract ${GCC_TAR} ../gcc
@@ -410,7 +410,7 @@ function extract_sources() {
 
 # Update git repos
 function update_repos() {
-    if [[ ! ${UPDATE} && ! ${TARBALLS} ]]; then
+    if [[ -z ${UPDATE} && -z ${TARBALLS} ]]; then
         header "UPDATING SOURCES"
         (
             cd isl || die "ISL did not get cloned properly!"
@@ -421,7 +421,7 @@ function update_repos() {
         )
         (
             cd binutils || die "binutils did not get cloned properly!"
-            [[ ${FULL_SOURCE} ]] && BRANCH=origin/${BINUTILS_git} || BRANCH=FETCH_HEAD
+            [[ -n ${FULL_SOURCE} ]] && BRANCH=origin/${BINUTILS_git} || BRANCH=FETCH_HEAD
             git fetch ${QUIET_FLAG:+ "--depth=1"} origin ${BINUTILS_git}
             if ! git checkout ${BINUTILS_git}; then
                 git checkout -b ${BINUTILS_git} ${BRANCH}
@@ -430,7 +430,7 @@ function update_repos() {
         )
         (
             cd gcc || die "GCC did not get cloned properly!"
-            [[ ${FULL_SOURCE} ]] && BRANCH=origin/${GCC} || BRANCH=FETCH_HEAD
+            [[ -n ${FULL_SOURCE} ]] && BRANCH=origin/${GCC} || BRANCH=FETCH_HEAD
             git fetch ${DEPTH_FLAG:+ "--depth=1"} origin ${GCC}
             if ! git checkout ${GCC}; then
                 git checkout -b ${GCC} ${BRANCH}
@@ -478,7 +478,7 @@ function setup_env() {
     ln -s -f "${ROOT}/${MPFR}" mpfr
     ln -s -f "${ROOT}/${GMP}" gmp
     ln -s -f "${ROOT}/${MPC}" mpc
-    if [[ ${TARBALLS} ]]; then
+    if [[ -n ${TARBALLS} ]]; then
         ln -s -f "${ROOT}/${ISL}" isl
     else
         ln -s -f "${ROOT}/isl" isl
@@ -607,7 +607,7 @@ function package_tc() {
 function ending_info() {
     END=$(date +%s)
 
-    [[ ! ${VERBOSE} ]] && exec 1>&5 2>&6
+    [[ -z ${VERBOSE} ]] && exec 1>&5 2>&6
     if [[ -e ${TARGET}/bin/${TARGET}-gcc ]]; then
         header "BUILD SUCCESSFUL"
         echo "${BOLD}Script duration:${RST} $(format_time "${START}" "${END}")"
