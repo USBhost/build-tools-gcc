@@ -132,6 +132,18 @@ function check_sudo() {
 }
 
 
+# git clone wrapper
+function git_clone() {
+    git clone ${DEPTH_FLAG:+"--depth=1"} "${@}"
+}
+
+
+# git fetch wrapper
+function git_fetch() {
+    git fetch ${DEPTH_FLAG:+"--depth=1"} "${@}"
+}
+
+
 # Initial setup
 function setup_variables() {
     # Colors
@@ -341,17 +353,17 @@ function download_sources() {
     if [[ -z ${TARBALLS} ]]; then
         if [[ ! -d binutils ]]; then
             header "DOWNLOADING BINUTILS"
-            git clone ${DEPTH_FLAG:+ "--depth=1"} https://git.linaro.org/toolchain/binutils-gdb.git binutils -b ${BINUTILS_git}
+            git_clone https://git.linaro.org/toolchain/binutils-gdb.git binutils -b ${BINUTILS_git}
         fi
 
         if [[ ! -d isl ]]; then
             header "DOWNLOADING ISL"
-            git clone ${DEPTH_FLAG:+ "--depth=1"} git://repo.or.cz/isl.git -b ${ISL}
+            git_clone git://repo.or.cz/isl.git -b ${ISL}
         fi
 
         if [[ ! -d gcc ]]; then
             header "DOWNLOADING GCC"
-            git clone ${DEPTH_FLAG:+ "--depth=1"} https://git.linaro.org/toolchain/gcc.git -b ${GCC}
+            git_clone https://git.linaro.org/toolchain/gcc.git -b ${GCC}
         fi
     else
         if [[ ! -f binutils-${BINUTILS_tar}.tar.xz ]]; then
@@ -422,7 +434,7 @@ function update_repos() {
         (
             cd binutils || die "binutils did not get cloned properly!"
             [[ -n ${FULL_SOURCE} ]] && BRANCH=origin/${BINUTILS_git} || BRANCH=FETCH_HEAD
-            git fetch ${QUIET_FLAG:+ "--depth=1"} origin ${BINUTILS_git}
+            git_fetch origin ${BINUTILS_git}
             if ! git checkout ${BINUTILS_git}; then
                 git checkout -b ${BINUTILS_git} ${BRANCH}
             fi
@@ -431,7 +443,7 @@ function update_repos() {
         (
             cd gcc || die "GCC did not get cloned properly!"
             [[ -n ${FULL_SOURCE} ]] && BRANCH=origin/${GCC} || BRANCH=FETCH_HEAD
-            git fetch ${DEPTH_FLAG:+ "--depth=1"} origin ${GCC}
+            git_fetch origin ${GCC}
             if ! git checkout ${GCC}; then
                 git checkout -b ${GCC} ${BRANCH}
             fi
