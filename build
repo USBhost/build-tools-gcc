@@ -198,7 +198,7 @@ function parse_parameters() {
             # OPTIONAL FLAGS
             "-f"|"--full-src") FULL_SOURCE=true ;;
             "-nt"|"--no-tmpfs") NO_TMPFS=true ;;
-            "-nu"|"--no-update") UPDATE=false ;;
+            "-nu"|"--no-update") NO_UPDATE=true ;;
             "-p"|"--package") shift && COMPRESSION=${1} ;;
             "-t"|"--tarballs") TARBALLS=true ;;
             "-V"|"--verbose") VERBOSE=true ;;
@@ -431,7 +431,7 @@ function extract_sources() {
 
 # Update git repos
 function update_repos() {
-    if [[ -z ${UPDATE} && -z ${TARBALLS} ]]; then
+    if [[ -z ${NO_UPDATE} && -z ${TARBALLS} ]]; then
         header "UPDATING SOURCES"
         (
             cd isl || die "ISL did not get cloned properly!"
