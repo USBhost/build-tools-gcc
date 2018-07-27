@@ -77,8 +77,8 @@ function die() {
     [[ -z ${VERBOSE} ]] && exec 1>&5 2>&6
     echo ""
     echo "${RED}${1}${RST}"
-    [[ ${2} =~ "-n" ]] && echo
-    [[ ${2} =~ "-h" ]] && help_menu
+    [[ "${*}" =~ "-n" ]] && echo
+    [[ "${*}" =~ "-h" ]] && help_menu
     exit
 }
 
@@ -87,7 +87,7 @@ function die() {
 function warn() {
     echo ""
     echo "${YLW}${1}${RST}"
-    [[ ${2} =~ "-n" ]] && echo
+    [[ "${*}" =~ "-n" ]] && echo
 }
 
 
