@@ -128,7 +128,22 @@ function format_time() {
 
 # Check if user needs to enter sudo password or not
 function check_sudo() {
-    sudo -n true 2>/dev/null
+    echo
+    echo "Checking if sudo is available, please enter your password if a prompt appears!"
+    if ! sudo -v 2>/dev/null; then
+        warn "Sudo is not available! Disabling the option for tmpfs..." -n
+        NO_TMPFS=true
+    fi
+}
+
+
+# Unmount tmpfs
+function unmount_tmpfs() {
+    if [[ -z ${NO_TMPFS} ]]; then
+        sudo umount -f build-glibc 2>/dev/null
+        sudo umount -f build-gcc 2>/dev/null
+        sudo umount -f build-binutils 2>/dev/null
+    fi
 }
 
 
@@ -182,7 +197,7 @@ function parse_parameters() {
 
             # OPTIONAL FLAGS
             "-f"|"--full-src") FULL_SOURCE=true ;;
-            "-nt"|"--no-tmpfs") TMPFS=false ;;
+            "-nt"|"--no-tmpfs") NO_TMPFS=true ;;
             "-nu"|"--no-update") UPDATE=false ;;
             "-p"|"--package") shift && COMPRESSION=${1} ;;
             "-t"|"--tarballs") TARBALLS=true ;;
@@ -195,6 +210,7 @@ function parse_parameters() {
         shift
     done
 
+    [[ -z ${NO_TMPFS} ]] && check_sudo
     [[ -z ${VERBOSE} ]] && exec 6>&2 5>&1 &>/dev/null
     [[ -z ${FULL_SOURCE} ]] && DEPTH_FLAG=true
 
@@ -255,14 +271,7 @@ function parse_parameters() {
 function clean_up() { #FIXME: we dont need to remove everything everytime.
     header "CLEANING UP"
 
-    if [[ ${TMPFS} != false ]]; then
-        if check_sudo; then
-            echo "Please enter your password at the following prompt. It is needed so we can unmount the build folders from tmpfs."
-        fi
-        sudo umount -f build-glibc 2>/dev/null
-        sudo umount -f build-gcc 2>/dev/null
-        sudo umount -f build-binutils 2>/dev/null
-    fi
+    unmount_tmpfs
     git clean -fxdq -e sources -e prebuilts
     find . -maxdepth 1 -type l -exec rm -rf {} \; #FIXME
     if [[ -d binutils ]] ||
@@ -473,10 +482,7 @@ function setup_env() {
     mkdir build-gcc
     mkdir build-binutils
 
-    if [[ ${TMPFS} != false ]]; then
-        if check_sudo; then
-            echo "Please enter your password at the following prompt. It is needed so we can mount some folders on tmpfs."
-        fi
+    if [[ -z ${NO_TMPFS} ]]; then
         sudo mount -t tmpfs -o rw none build-glibc
         sudo mount -t tmpfs -o rw none build-gcc
         sudo mount -t tmpfs -o rw none build-binutils
@@ -575,19 +581,6 @@ function install_gcc() {
 }
 
 
-# Unmount tmpfs
-function unmount_tmpfs() {
-    if [[ ${TMPFS} != false ]]; then
-        if check_sudo; then
-            echo "Please enter your password at the following prompt. It is needed so we can unmount the build folders from tmpfs."
-        fi
-        sudo umount -f build-glibc
-        sudo umount -f build-gcc
-        sudo umount -f build-binutils
-    fi
-}
-
-
 # Package toolchain
 function package_tc() {
     if [[ -n ${COMPRESSION} ]]; then
@@ -637,6 +630,8 @@ function ending_info() {
 
 setup_variables
 parse_parameters "${@}"
+trap 'unmount_tmpfs; die "Manually aborted!" -n' SIGINT SIGTERM
+trap 'unmount_tmpfs' EXIT
 clean_up
 build_binaries
 download_sources
@@ -648,6 +643,5 @@ build_headers
 build_gcc
 build_glibc
 install_gcc
-unmount_tmpfs
 package_tc
 ending_info
