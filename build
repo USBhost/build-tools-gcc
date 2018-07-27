@@ -62,13 +62,13 @@ function help_menu() {
 
 # Prints a formatted header to let the user know what's being done
 function header() {
-    echo "${RED}"
+    [[ "${*}" =~ "--no-first-echo" ]] || echo
     # shellcheck disable=SC2034
-    echo "====$(for i in $(seq ${#1}); do echo "=\c"; done)===="
+    echo "${RED}====$(for i in $(seq ${#1}); do echo "=\c"; done)===="
     echo "==  ${1}  =="
     # shellcheck disable=SC2034
-    echo "====$(for i in $(seq ${#1}); do echo "=\c"; done)===="
-    echo "${RST}"
+    echo "====$(for i in $(seq ${#1}); do echo "=\c"; done)====${RST}"
+    [[ "${*}" =~ "--no-second-echo" ]] || echo
 }
 
 
@@ -498,6 +498,12 @@ function setup_env() {
         ln -s -f "${ROOT}/isl" isl
     fi
     cd ..
+
+    if [[ -z ${VERBOSE} ]]; then
+        exec 1>&5 2>&6
+        header "BUILDING TOOLCHAIN"
+        exec 6>&2 5>&1 &>/dev/null
+    fi
 }
 
 
@@ -610,7 +616,7 @@ function ending_info() {
 
     [[ -z ${VERBOSE} ]] && exec 1>&5 2>&6
     if [[ -e ${TARGET}/bin/${TARGET}-gcc ]]; then
-        header "BUILD SUCCESSFUL"
+        header "BUILD SUCCESSFUL" ${VERBOSE:-"--no-first-echo"}
         echo "${BOLD}Script duration:${RST} $(format_time "${START}" "${END}")"
         echo "${BOLD}GCC version:${RST} $(${TARGET}/bin/${TARGET}-gcc --version | head -n 1)"
         if [[ -n ${COMPRESSION} ]] && [[ -e ${PACKAGE} ]]; then
