@@ -435,18 +435,14 @@ function update_repos() {
             cd binutils || die "binutils did not get cloned properly!"
             [[ -n ${FULL_SOURCE} ]] && BRANCH=origin/${BINUTILS_git} || BRANCH=FETCH_HEAD
             git_fetch origin ${BINUTILS_git}
-            if ! git checkout ${BINUTILS_git}; then
-                git checkout -b ${BINUTILS_git} ${BRANCH}
-            fi
+            git checkout ${BINUTILS_git} || git checkout -b ${BINUTILS_git} ${BRANCH}
             git reset --hard ${BRANCH}
         )
         (
             cd gcc || die "GCC did not get cloned properly!"
             [[ -n ${FULL_SOURCE} ]] && BRANCH=origin/${GCC} || BRANCH=FETCH_HEAD
             git_fetch origin ${GCC}
-            if ! git checkout ${GCC}; then
-                git checkout -b ${GCC} ${BRANCH}
-            fi
+            git checkout ${GCC} || git checkout -b ${GCC} ${BRANCH}
             git reset --hard ${BRANCH}
         )
     else
