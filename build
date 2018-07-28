@@ -62,23 +62,23 @@ function help_menu() {
 
 # Prints a formatted header to let the user know what's being done
 function header() {
-    echo "${RED}"
+    [[ "${*}" =~ "--no-first-echo" ]] || echo
     # shellcheck disable=SC2034
-    echo "====$(for i in $(seq ${#1}); do echo "=\c"; done)===="
+    echo "${RED}====$(for i in $(seq ${#1}); do echo "=\c"; done)===="
     echo "==  ${1}  =="
     # shellcheck disable=SC2034
-    echo "====$(for i in $(seq ${#1}); do echo "=\c"; done)===="
-    echo "${RST}"
+    echo "====$(for i in $(seq ${#1}); do echo "=\c"; done)====${RST}"
+    [[ "${*}" =~ "--no-second-echo" ]] || echo
 }
 
 
 # Prints an error in bold red
 function die() {
-    [[ ! ${VERBOSE} ]] && exec 1>&5 2>&6
+    [[ -z ${VERBOSE} ]] && exec 1>&5 2>&6
     echo ""
     echo "${RED}${1}${RST}"
-    [[ ${2} =~ "-n" ]] && echo
-    [[ ${2} =~ "-h" ]] && help_menu
+    [[ "${*}" =~ "-n" ]] && echo
+    [[ "${*}" =~ "-h" ]] && help_menu
     exit
 }
 
@@ -87,7 +87,7 @@ function die() {
 function warn() {
     echo ""
     echo "${YLW}${1}${RST}"
-    [[ ${2} =~ "-n" ]] && echo
+    [[ "${*}" =~ "-n" ]] && echo
 }
 
 
@@ -128,7 +128,34 @@ function format_time() {
 
 # Check if user needs to enter sudo password or not
 function check_sudo() {
-    sudo -n true 2>/dev/null
+    echo
+    echo "Checking if sudo is available, please enter your password if a prompt appears!"
+    if ! sudo -v 2>/dev/null; then
+        warn "Sudo is not available! Disabling the option for tmpfs..." -n
+        NO_TMPFS=true
+    fi
+}
+
+
+# Unmount tmpfs
+function unmount_tmpfs() {
+    if [[ -z ${NO_TMPFS} ]]; then
+        sudo umount -f build-glibc 2>/dev/null
+        sudo umount -f build-gcc 2>/dev/null
+        sudo umount -f build-binutils 2>/dev/null
+    fi
+}
+
+
+# git clone wrapper
+function git_clone() {
+    git clone ${DEPTH_FLAG:+"--depth=1"} "${@}"
+}
+
+
+# git fetch wrapper
+function git_fetch() {
+    git fetch ${DEPTH_FLAG:+"--depth=1"} "${@}"
 }
 
 
@@ -170,8 +197,8 @@ function parse_parameters() {
 
             # OPTIONAL FLAGS
             "-f"|"--full-src") FULL_SOURCE=true ;;
-            "-nt"|"--no-tmpfs") TMPFS=false ;;
-            "-nu"|"--no-update") UPDATE=false ;;
+            "-nt"|"--no-tmpfs") NO_TMPFS=true ;;
+            "-nu"|"--no-update") NO_UPDATE=true ;;
             "-p"|"--package") shift && COMPRESSION=${1} ;;
             "-t"|"--tarballs") TARBALLS=true ;;
             "-V"|"--verbose") VERBOSE=true ;;
@@ -183,7 +210,9 @@ function parse_parameters() {
         shift
     done
 
-    [[ ! ${VERBOSE} ]] && exec 6>&2 5>&1 &>/dev/null
+    [[ -z ${NO_TMPFS} ]] && check_sudo
+    [[ -z ${VERBOSE} ]] && exec 6>&2 5>&1 &>/dev/null
+    [[ -z ${FULL_SOURCE} ]] && DEPTH_FLAG=true
 
     # Default values
     case "${ARCH}" in
@@ -194,7 +223,7 @@ function parse_parameters() {
         *) die "Absent or invalid arch specified!" -h ;;
     esac
 
-    if [[ ! ${TARBALLS} ]]; then
+    if [[ -z ${TARBALLS} ]]; then
         # Set GCC branch based on version and Linaro or not
         case "${SOURCE}:${VERSION}" in
             "gnu:4") die "Will not build, Use Linaro instead" ;;
@@ -222,7 +251,7 @@ function parse_parameters() {
                      ISL="isl-0.17.1" ;;
             "gnu:6") GCC=gcc-6.4.0 ;;
             "gnu:7") GCC=gcc-7.3.0 ;;
-            "gnu:8") GCC=gcc-8.1.0 ;;
+            "gnu:8") GCC=gcc-8.2.0 ;;
             "gnu:9") die "GCC 9.0 is currently a WIP so there is no tarball to download! Either use the git repo or choose a new version..." ;;
             "linaro:4") GCC=linaro-4.9-2017.01
                         ISL="isl-0.17.1" ;;
@@ -242,14 +271,7 @@ function parse_parameters() {
 function clean_up() { #FIXME: we dont need to remove everything everytime.
     header "CLEANING UP"
 
-    if [[ ${TMPFS} != false ]]; then
-        if check_sudo; then
-            echo "Please enter your password at the following prompt. It is needed so we can unmount the build folders from tmpfs."
-        fi
-        sudo umount -f build-glibc 2>/dev/null
-        sudo umount -f build-gcc 2>/dev/null
-        sudo umount -f build-binutils 2>/dev/null
-    fi
+    unmount_tmpfs
     git clean -fxdq -e sources -e prebuilts
     find . -maxdepth 1 -type l -exec rm -rf {} \; #FIXME
     if [[ -d binutils ]] ||
@@ -337,20 +359,20 @@ function download_sources() {
         axel https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-${LINUX}.tar.xz
     fi
 
-    if [[ ! ${TARBALLS} ]]; then
+    if [[ -z ${TARBALLS} ]]; then
         if [[ ! -d binutils ]]; then
             header "DOWNLOADING BINUTILS"
-            git clone ${FULL_SOURCE:- "--depth=1"} https://git.linaro.org/toolchain/binutils-gdb.git binutils -b ${BINUTILS_git}
+            git_clone https://git.linaro.org/toolchain/binutils-gdb.git binutils -b ${BINUTILS_git}
         fi
 
         if [[ ! -d isl ]]; then
             header "DOWNLOADING ISL"
-            git clone ${FULL_SOURCE:- "--depth=1"} git://repo.or.cz/isl.git -b ${ISL}
+            git_clone git://repo.or.cz/isl.git -b ${ISL}
         fi
 
         if [[ ! -d gcc ]]; then
             header "DOWNLOADING GCC"
-            git clone ${FULL_SOURCE:- "--depth=1"} https://git.linaro.org/toolchain/gcc.git -b ${GCC}
+            git_clone https://git.linaro.org/toolchain/gcc.git -b ${GCC}
         fi
     else
         if [[ ! -f binutils-${BINUTILS_tar}.tar.xz ]]; then
@@ -399,7 +421,7 @@ function extract_sources() {
     extract ${MPC}.tar.gz ../${MPC}
     extract ${GLIBC}.tar.xz ../${GLIBC}
     extract linux-${LINUX}.tar.xz ../linux
-    if [[ ${TARBALLS} ]]; then
+    if [[ -n ${TARBALLS} ]]; then
         extract binutils-${BINUTILS_tar}.tar.xz ../binutils
         extract ${ISL}.tar.xz ../${ISL}
         extract ${GCC_TAR} ../gcc
@@ -409,7 +431,7 @@ function extract_sources() {
 
 # Update git repos
 function update_repos() {
-    if [[ ! ${UPDATE} && ! ${TARBALLS} ]]; then
+    if [[ -z ${NO_UPDATE} && -z ${TARBALLS} ]]; then
         header "UPDATING SOURCES"
         (
             cd isl || die "ISL did not get cloned properly!"
@@ -420,17 +442,16 @@ function update_repos() {
         )
         (
             cd binutils || die "binutils did not get cloned properly!"
-            git remote update
-            git checkout ${BINUTILS_git}
-            git reset --hard origin/${BINUTILS_git}
+            [[ -n ${FULL_SOURCE} ]] && BRANCH=origin/${BINUTILS_git} || BRANCH=FETCH_HEAD
+            git_fetch origin ${BINUTILS_git}
+            git checkout ${BINUTILS_git} || git checkout -b ${BINUTILS_git} ${BRANCH}
+            git reset --hard ${BRANCH}
         )
         (
             cd gcc || die "GCC did not get cloned properly!"
-            [[ ${FULL_SOURCE} ]] && BRANCH=origin/${GCC} || BRANCH=FETCH_HEAD
-            git fetch ${FULL_SOURCE:- "--depth=1"} origin ${GCC}
-            if ! git checkout ${GCC}; then
-                git checkout -b ${GCC} ${BRANCH}
-            fi
+            [[ -n ${FULL_SOURCE} ]] && BRANCH=origin/${GCC} || BRANCH=FETCH_HEAD
+            git_fetch origin ${GCC}
+            git checkout ${GCC} || git checkout -b ${GCC} ${BRANCH}
             git reset --hard ${BRANCH}
         )
     else
@@ -461,10 +482,7 @@ function setup_env() {
     mkdir build-gcc
     mkdir build-binutils
 
-    if [[ ${TMPFS} != false ]]; then
-        if check_sudo; then
-            echo "Please enter your password at the following prompt. It is needed so we can mount some folders on tmpfs."
-        fi
+    if [[ -z ${NO_TMPFS} ]]; then
         sudo mount -t tmpfs -o rw none build-glibc
         sudo mount -t tmpfs -o rw none build-gcc
         sudo mount -t tmpfs -o rw none build-binutils
@@ -474,12 +492,18 @@ function setup_env() {
     ln -s -f "${ROOT}/${MPFR}" mpfr
     ln -s -f "${ROOT}/${GMP}" gmp
     ln -s -f "${ROOT}/${MPC}" mpc
-    if [[ ${TARBALLS} ]]; then
+    if [[ -n ${TARBALLS} ]]; then
         ln -s -f "${ROOT}/${ISL}" isl
     else
         ln -s -f "${ROOT}/isl" isl
     fi
     cd ..
+
+    if [[ -z ${VERBOSE} ]]; then
+        exec 1>&5 2>&6
+        header "BUILDING TOOLCHAIN"
+        exec 6>&2 5>&1 &>/dev/null
+    fi
 }
 
 
@@ -563,19 +587,6 @@ function install_gcc() {
 }
 
 
-# Unmount tmpfs
-function unmount_tmpfs() {
-    if [[ ${TMPFS} != false ]]; then
-        if check_sudo; then
-            echo "Please enter your password at the following prompt. It is needed so we can unmount the build folders from tmpfs."
-        fi
-        sudo umount -f build-glibc
-        sudo umount -f build-gcc
-        sudo umount -f build-binutils
-    fi
-}
-
-
 # Package toolchain
 function package_tc() {
     if [[ -n ${COMPRESSION} ]]; then
@@ -603,9 +614,9 @@ function package_tc() {
 function ending_info() {
     END=$(date +%s)
 
-    [[ ! ${VERBOSE} ]] && exec 1>&5 2>&6
+    [[ -z ${VERBOSE} ]] && exec 1>&5 2>&6
     if [[ -e ${TARGET}/bin/${TARGET}-gcc ]]; then
-        header "BUILD SUCCESSFUL"
+        header "BUILD SUCCESSFUL" ${VERBOSE:-"--no-first-echo"}
         echo "${BOLD}Script duration:${RST} $(format_time "${START}" "${END}")"
         echo "${BOLD}GCC version:${RST} $(${TARGET}/bin/${TARGET}-gcc --version | head -n 1)"
         if [[ -n ${COMPRESSION} ]] && [[ -e ${PACKAGE} ]]; then
@@ -625,6 +636,8 @@ function ending_info() {
 
 setup_variables
 parse_parameters "${@}"
+trap 'unmount_tmpfs; die "Manually aborted!" -n' SIGINT SIGTERM
+trap 'unmount_tmpfs' EXIT
 clean_up
 build_binaries
 download_sources
@@ -636,6 +649,5 @@ build_headers
 build_gcc
 build_glibc
 install_gcc
-unmount_tmpfs
 package_tc
 ending_info
