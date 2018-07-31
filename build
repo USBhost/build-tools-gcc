@@ -177,7 +177,7 @@ function setup_variables() {
     GMP="gmp-6.1.2"
     MPFR="mpfr-4.0.1"
     MPC="mpc-1.1.0"
-    ISL="isl-0.19"
+    ISL="isl-0.20"
     GLIBC="glibc-2.27"
     LINUX="4.17"
 
