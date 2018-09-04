@@ -59,7 +59,6 @@ function help_menu() {
     echo
     echo "${BOLD}OPTIONAL PARAMETERS:${RST}"
     echo "  -f  | --full-src:    Download full git repos instead of shallow clones"
-    echo "  -nt | --no-tmpfs:    Do not use tmpfs for building (useful if you don't have much RAM)."
     echo "  -nu | --no-update:   Do not update the downloaded components before building (useful if you have slow internet)."
     echo "  -p  | --package:     Possible values: gz or xz. Compresses toolchain after build."
     echo "  -t  | --tarballs:    Use tarballs for binutils, ISL, and, GCC"
@@ -132,28 +131,6 @@ function format_time() {
 
     echo "${TIME_STRING}"
 }
-
-
-# Check if user needs to enter sudo password or not
-function check_sudo() {
-    echo
-    echo "Checking if sudo is available, please enter your password if a prompt appears!"
-    if ! sudo -v 2>/dev/null; then
-        warn "Sudo is not available! Disabling the option for tmpfs..." -n
-        NO_TMPFS=true
-    fi
-}
-
-
-# Unmount tmpfs
-function unmount_tmpfs() {
-    if [[ -z ${NO_TMPFS} ]]; then
-        sudo umount -f build-glibc 2>/dev/null
-        sudo umount -f build-gcc 2>/dev/null
-        sudo umount -f build-binutils 2>/dev/null
-    fi
-}
-
 
 # git clone wrapper
 function git_clone() {
@@ -232,7 +209,6 @@ function parse_parameters() {
 
             # OPTIONAL FLAGS
             "-f"|"--full-src") FULL_SOURCE=true ;;
-            "-nt"|"--no-tmpfs") NO_TMPFS=true ;;
             "-nu"|"--no-update") NO_UPDATE=true ;;
             "-p"|"--package") shift && COMPRESSION=${1} ;;
             "-t"|"--tarballs") TARBALLS=true ;;
@@ -245,7 +221,6 @@ function parse_parameters() {
         shift
     done
 
-    [[ -z ${NO_TMPFS} ]] && check_sudo
     [[ -z ${VERBOSE} ]] && exec 6>&2 5>&1 &>/dev/null
     [[ -z ${FULL_SOURCE} ]] && DEPTH_FLAG=true
 
@@ -439,7 +414,7 @@ function extract_sources() {
     extract ${GMP}.tar.xz ${SOURCES_DIR}/gmp-${GMP}
     extract ${MPC}.tar.gz ${SOURCES_DIR}/mpc-${MPC}
     extract ${ISL}.tar.xz ${SOURCES_DIR}/isl-${ISL}
-    
+
     if [[ -n ${TARBALLS} ]]; then
         extract ${GLIBC}.tar.xz ${SOURCES_DIR}/glibc-${GLIBC}
         extract linux-${LINUX}.tar.xz ${SOURCES_DIR}/linux-${LINUX}
@@ -700,8 +675,6 @@ function ending_info() {
 parse_parameters "${@}"
 setup_variables
 setup_environment
-trap 'unmount_tmpfs; die "Manually aborted!" -n' SIGINT SIGTERM
-trap 'unmount_tmpfs' EXIT
 #clean_up
 build_binaries
 download_sources
