@@ -607,10 +607,9 @@ function install_gcc() {
     check_build_state ${FUNCNAME[0]} && return
 
     header "INSTALLING GCC"
-    cd ../build-gcc || die "GCC build folder does not exist!"
+    cd ${BUILD_DIR}/build-gcc || die "GCC build folder does not exist!"
     make all ${JOBS} || die "Error while compiling final toolchain!" -n
     make install ${JOBS} || die "Error while installing final toolchain!" -n
-    cd ..
 
     set_build_state ${FUNCNAME[0]}
 }
@@ -684,7 +683,7 @@ extract_sources
 build_binutils
 build_headers
 build_gcc
-#build_glibc
-#install_gcc
-#package_tc
-#ending_info
+build_glibc
+install_gcc
+package_tc
+ending_info
