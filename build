@@ -360,11 +360,6 @@ function download_sources() {
     cd ${SOURCES_DIR} || die "Failed to create sources directory!"
 
     if [[ -z ${TARBALLS} ]]; then
-        if [[ ! -d mpc-${MPC} ]]; then
-            header "DOWNLOADING MPC"
-            git_clone ${MPC_GIT_URL} mpc-${MPC} -b ${MPC}
-        fi
-
         if [[ ! -d glibc-${GLIBC} ]]; then
             header "DOWNLOADING GLIBC"
             git_clone ${GLIBC_GIT_URL} glibc-${GLIBC} -b ${GLIBC}
@@ -380,33 +375,42 @@ function download_sources() {
             git_clone ${BINUTILS_GIT_URL} binutils-${BINUTILS} -b ${BINUTILS}
         fi
 
-        if [[ ! -d isl-${ISL} ]]; then
-            header "DOWNLOADING ISL"
-            git_clone ${ISL_GIT_URL} isl-${ISL} -b ${ISL}
-        fi
-
         if [[ ! -d gcc-${GCC} ]]; then
             header "DOWNLOADING GCC"
             git_clone ${GCC_GIT_URL} gcc-${GCC} -b ${GCC}
         fi
     else
+        if [[ ! -f ${GLIBC}.tar.xz ]]; then
+            header "DOWNLOADING GLIBC"
+            axel ${GLIBC_BASE_URL}${GLIBC}.tar.xz
+        fi
+
+        if [[ ! -f linux-${LINUX}.tar.xz ]]; then
+            header "DOWNLOADING LINUX KERNEL"
+            axel ${LINUX_BASE_URL}${LINUX}.tar.xz
+        fi
+
         if [[ ! -f binutils-${BINUTILS}.tar.xz ]]; then
             header "DOWNLOADING BINUTILS"
             axel ${BINUTILS_BASE_URL}${BINUTILS}.tar.xz
         fi
 
-        if [[ ! -f ${ISL}.tar.xz ]]; then
-            header "DOWNLOADING ISL ${ISL} FOR GCC ${VERSION}"
-            axel ${ISL_BASE_URL}${ISL}.tar.xz
-        fi
-
-        if [[ ! -f gcc-${GCC}.tar.gz ]]; then
+        if [[ ! -f ${GCC}.tar.gz ]]; then
             header "DOWNLOADING GCC"
-            axel ${GCC_BASE_URL}${GCC}.tar.gz
+            axel ${GCC_BASE_URL}/${GCC}/${GCC}.tar.gz
         fi
     fi
 
-    # MPFR and GMP are not using git, so we will use the tarballs
+    if [[ ! -f ${MPC}.tar.gz ]]; then
+        header "DOWNLOADING MPC"
+        axel ${MPC_BASE_URL}${MPC}.tar.gz
+    fi
+
+    if [[ ! -f ${ISL}.tar.xz ]]; then
+        header "DOWNLOADING ISL ${ISL} FOR GCC ${VERSION}"
+        axel ${ISL_BASE_URL}${ISL}.tar.xz
+    fi
+
     if [[ ! -f ${MPFR}.tar.xz ]]; then
         header "DOWNLOADING MPFR"
         axel ${MPFR_BASE_URL}${MPFR}.tar.xz
@@ -433,13 +437,14 @@ function extract_sources() {
 
     extract ${MPFR}.tar.xz ${SOURCES_DIR}/mpfr-${MPFR}
     extract ${GMP}.tar.xz ${SOURCES_DIR}/gmp-${GMP}
+    extract ${MPC}.tar.gz ${SOURCES_DIR}/mpc-${MPC}
+    extract ${ISL}.tar.xz ${SOURCES_DIR}/isl-${ISL}
+    
     if [[ -n ${TARBALLS} ]]; then
-        extract ${MPC}.tar.gz ${SOURCES_DIR}/mpc-${MPC}
         extract ${GLIBC}.tar.xz ${SOURCES_DIR}/glibc-${GLIBC}
         extract linux-${LINUX}.tar.xz ${SOURCES_DIR}/linux-${LINUX}
         extract binutils-${BINUTILS}.tar.xz ${SOURCES_DIR}/binutils-${BINUTILS}
-        extract ${ISL}.tar.xz ${SOURCES_DIR}/isl-${ISL}
-        extract gcc-${GCC}.tar.gz ${SOURCES_DIR}/gcc-${GCC}
+        extract ${GCC}.tar.gz ${SOURCES_DIR}/gcc-${GCC}
     fi
 
     set_build_state ${FUNCNAME[0]}
@@ -563,17 +568,17 @@ function build_gcc() {
 
     header "MAKING GCC"
 
-    ln -s -f "${SOURCES_DIR}/mpfr-${MPFR}" ${SOURCES_DIR}/gcc-${GCC}/mpfr
-    ln -s -f "${SOURCES_DIR}/gmp-${GMP}" ${SOURCES_DIR}/gcc-${GCC}/gmp
-    ln -s -f "${SOURCES_DIR}/mpc-${MPC}" ${SOURCES_DIR}/gcc-${GCC}/mpc
-    ln -s -f "${SOURCES_DIR}/isl-${ISL}" ${SOURCES_DIR}/gcc-${GCC}/isl
+    ln -sfn "${SOURCES_DIR}/mpfr-${MPFR}" ${SOURCES_DIR}/gcc-${GCC}/mpfr
+    ln -sfn "${SOURCES_DIR}/gmp-${GMP}" ${SOURCES_DIR}/gcc-${GCC}/gmp
+    ln -sfn "${SOURCES_DIR}/mpc-${MPC}" ${SOURCES_DIR}/gcc-${GCC}/mpc
+    ln -sfn "${SOURCES_DIR}/isl-${ISL}" ${SOURCES_DIR}/gcc-${GCC}/isl
 
     mkdir -p ${BUILD_DIR}/build-gcc
     cd ${BUILD_DIR}/build-gcc || die "GCC build folder does not exist!"
     ${SOURCES_DIR}/gcc-${GCC}/configure "${CONFIGURATION[@]}" \
                      --enable-languages=c \
                      --target=${TARGET} \
-                     --prefix="${INSTALL}"
+                     --prefix=${INSTALL}
     make all-gcc ${JOBS} || die "Error while building gcc!" -n
     make install-gcc ${JOBS} || die "Error while installing gcc!" -n
     if [[ ${ARCH} = "x86_64" ]]; then
