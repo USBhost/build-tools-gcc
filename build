@@ -71,7 +71,7 @@ function help_menu() {
 function header() {
     [[ "${*}" =~ "--no-first-echo" ]] || echo
     # shellcheck disable=SC2034
-    echo "${RED}====$(for i in $(seq ${#1}); do echo "=\c"; done)===="
+    echo "${GRN}====$(for i in $(seq ${#1}); do echo "=\c"; done)===="
     echo "==  ${1}  =="
     # shellcheck disable=SC2034
     echo "====$(for i in $(seq ${#1}); do echo "=\c"; done)====${RST}"
@@ -188,6 +188,7 @@ function setup_variables() {
     RED="\033[01;31m"
     RST="\033[0m"
     YLW="\033[01;33m"
+    GRN="\033[1;32m"
 
     # Configuration variables
     CONFIGURATION=( "--disable-multilib" "--disable-werror" )
@@ -271,32 +272,10 @@ function parse_parameters() {
 }
 
 
-# Clean up from a previous compilation
-function clean_up() { #FIXME: we dont need to remove everything everytime.
-    header "CLEANING UP"
-
-    unmount_tmpfs
-    git clean -fxdq -e sources -e prebuilts || true
-    find . -maxdepth 1 -type l -exec rm -rf {} \; #FIXME
-    if [[ -d binutils ]] ||
-       [[ -d build-binutils ]] ||
-       [[ -d build-gcc ]] ||
-       [[ -d build-glibc ]] ||
-       [[ -d gcc ]] ||
-       [[ -d linux ]] ||
-       [[ -f ${TARGET} ]] ||
-       [[ $(for FILE in *.tar.*; do if [[ -f "${FILE}" ]]; then echo "true"; break; else echo "false"; fi done) = "true" ]]; then
-
-        die "Clean up failed! Aborting. Try checking that you have proper permissions to delete files."
-    else
-        echo "Clean up successful!"
-    fi
-}
-
-
 function build_binaries() {
 
     check_build_state ${FUNCNAME[0]} && return
+    cd ${ROOT}    
 
     local AXEL=${ROOT}/sources/axel
     [[ ! -d ${AXEL} ]] && git -C "$(dirname "${AXEL}")" clone --depth=1 https://github.com/axel-download-accelerator/axel
@@ -331,6 +310,7 @@ function build_binaries() {
 function download_sources() {
 
     check_build_state ${FUNCNAME[0]} && return
+    cd ${ROOT}    
 
     cd ${SOURCES_DIR} || die "Failed to create sources directory!"
 
@@ -405,6 +385,7 @@ function download_sources() {
 function extract_sources() {
 
     check_build_state ${FUNCNAME[0]} && return
+    cd ${ROOT}    
 
     header "EXTRACTING DOWNLOADED TARBALLS"
 
@@ -426,86 +407,11 @@ function extract_sources() {
 }
 
 
-# Update git repos
-function update_repos() {
-    if [[ -z ${NO_UPDATE} && -z ${TARBALLS} ]]; then
-        header "UPDATING SOURCES"
-        (
-            cd isl || die "ISL did not get cloned properly!"
-            git remote update
-            git checkout ${ISL}
-            git reset --hard HEAD
-            ./autogen.sh
-        )
-        (
-            cd binutils || die "binutils did not get cloned properly!"
-            [[ -n ${FULL_SOURCE} ]] && BRANCH=origin/${BINUTILS} || BRANCH=FETCH_HEAD
-            git_fetch origin ${BINUTILS}
-            git checkout ${BINUTILS} || git checkout -b ${BINUTILS} ${BRANCH}
-            git reset --hard ${BRANCH}
-        )
-        (
-            cd gcc || die "GCC did not get cloned properly!"
-            [[ -n ${FULL_SOURCE} ]] && BRANCH=origin/${GCC} || BRANCH=FETCH_HEAD
-            git_fetch origin ${GCC}
-            git checkout ${GCC} || git checkout -b ${GCC} ${BRANCH}
-            git reset --hard ${BRANCH}
-        )
-    else
-        if [[ -d isl ]]; then
-            (
-                cd isl || die "ISL did not get downloaded properly!"
-                ./autogen.sh
-            )
-        fi
-    fi
-
-    cd ..
-
-    [[ ! -d linux ]] && ln -s sources/linux linux
-    [[ ! -d binutils ]] && ln -s sources/binutils binutils
-    [[ ! -d gcc ]] && ln -s sources/gcc gcc
-}
-
-
-# Setup source folders and build folders
-function setup_env() {
-
-    [[ ! -d gcc ]] && die "GCC source is missing! Please check your connection and rerun the script!" -h
-
-    mkdir build-glibc
-    mkdir build-gcc
-    mkdir build-binutils
-
-    if [[ -z ${NO_TMPFS} ]]; then
-        sudo mount -t tmpfs -o rw none build-glibc
-        sudo mount -t tmpfs -o rw none build-gcc
-        sudo mount -t tmpfs -o rw none build-binutils
-    fi
-
-    cd gcc || die "GCC folder does not exit!"
-    ln -s -f "${ROOT}/${MPFR}" mpfr
-    ln -s -f "${ROOT}/${GMP}" gmp
-    ln -s -f "${ROOT}/${MPC}" mpc
-    if [[ -n ${TARBALLS} ]]; then
-        ln -s -f "${ROOT}/${ISL}" isl
-    else
-        ln -s -f "${ROOT}/isl" isl
-    fi
-    cd ..
-
-    if [[ -z ${VERBOSE} ]]; then
-        exec 1>&5 2>&6
-        header "BUILDING TOOLCHAIN"
-        exec 6>&2 5>&1 &>/dev/null
-    fi
-}
-
-
 # Build binutils
 function build_binutils() {
 
     check_build_state ${FUNCNAME[0]} && return
+    cd ${ROOT}    
 
     header "BUILDING BINUTILS"
     mkdir -p ${BUILD_DIR}/build-binutils
@@ -525,6 +431,7 @@ function build_binutils() {
 function build_headers() {
 
     check_build_state ${FUNCNAME[0]} && return
+    cd ${ROOT}
 
     header "MAKING LINUX HEADERS"
     cd ${SOURCES_DIR}/linux-${LINUX} || die "Linux kernel folder does not exist!"
@@ -540,6 +447,7 @@ function build_headers() {
 function build_gcc() {
 
     check_build_state ${FUNCNAME[0]} && return
+    cd ${ROOT}
 
     header "MAKING GCC"
 
@@ -556,11 +464,7 @@ function build_gcc() {
                      --prefix=${INSTALL}
     make all-gcc ${JOBS} || die "Error while building gcc!" -n
     make install-gcc ${JOBS} || die "Error while installing gcc!" -n
-    if [[ ${ARCH} = "x86_64" ]]; then
-        make all-target-libgcc ${JOBS} || die "Error while installing libgcc for host!" -n
-        make install-target-libgcc ${JOBS} || die "Error while installing libgcc for target!" -n
-    fi
-
+ 
     set_build_state ${FUNCNAME[0]}
 }
 
@@ -569,6 +473,7 @@ function build_gcc() {
 function build_glibc() {
 
     check_build_state ${FUNCNAME[0]} && return
+    cd ${ROOT}
 
     header "MAKING GLIBC"
     mkdir -p ${BUILD_DIR}/build-glibc
@@ -584,18 +489,14 @@ function build_glibc() {
     install csu/crt1.o csu/crti.o csu/crtn.o "${INSTALL}/${TARGET}/lib"
     ${TARGET}-gcc -nostdlib -nostartfiles -shared -x c /dev/null -o "${INSTALL}/${TARGET}/lib/libc.so"
     touch "${INSTALL}/${TARGET}/include/gnu/stubs.h"
-    if [[ ${ARCH} = "x86_64" || ${ARCH} = "i686" ]]; then
-        make ${JOBS} || die "Error while building glibc for the host!" -n
-        make install ${JOBS} || die "Error while installing glibc for the host!" -n
-    else
-        cd ${BUILD_DIR}/build-gcc || die "GCC build folder does not exist!"
-        make all-target-libgcc ${JOBS} || die "Error while building libgcc for target!" -n
-        make install-target-libgcc ${JOBS} || die "Error while installing libgcc for target!" -n
 
-        cd ${BUILD_DIR}/build-glibc || die "glibc build folder does not exist!"
-        make ${JOBS} || die "Error while building glibc for target" -n
-        make install ${JOBS} || die "Error while installing glibc for target" -n
-    fi
+    cd ${BUILD_DIR}/build-gcc || die "GCC build folder does not exist!"
+    make all-target-libgcc ${JOBS} || die "Error while building libgcc for target!" -n
+    make install-target-libgcc ${JOBS} || die "Error while installing libgcc for target!" -n
+
+    cd ${BUILD_DIR}/build-glibc || die "glibc build folder does not exist!"
+    make ${JOBS} || die "Error while building glibc for target" -n
+    make install ${JOBS} || die "Error while installing glibc for target" -n
 
     set_build_state ${FUNCNAME[0]}
 }
@@ -605,6 +506,7 @@ function build_glibc() {
 function install_gcc() {
 
     check_build_state ${FUNCNAME[0]} && return
+    cd ${ROOT}    
 
     header "INSTALLING GCC"
     cd ${BUILD_DIR}/build-gcc || die "GCC build folder does not exist!"
@@ -619,6 +521,7 @@ function install_gcc() {
 function package_tc() {
 
     check_build_state ${FUNCNAME[0]} && return
+    cd ${ROOT}    
 
     if [[ -n ${COMPRESSION} ]]; then
         PACKAGE=${TARGET}-${VERSION}.x-${SOURCE}-$(TZ=UTC date +%Y%m%d).tar.${COMPRESSION}
@@ -647,8 +550,12 @@ function package_tc() {
 function ending_info() {
 
     check_build_state ${FUNCNAME[0]} && return
+    cd ${ROOT}    
 
     END=$(date +%s)
+
+    echo "`pwd`"
+    echo "${TARGET}/bin/${TARGET}-gcc"
 
     [[ -z ${VERBOSE} ]] && exec 1>&5 2>&6
     if [[ -e ${TARGET}/bin/${TARGET}-gcc ]]; then
@@ -668,18 +575,15 @@ function ending_info() {
     # Alert to script end
     echo "\a"
 
-    set_build_state ${FUNCNAME[0]}    
+    set_build_state ${FUNCNAME[0]}
 }
 
 parse_parameters "${@}"
 setup_variables
 setup_environment
-#clean_up
 build_binaries
 download_sources
 extract_sources
-#update_repos
-#setup_env
 build_binutils
 build_headers
 build_gcc
