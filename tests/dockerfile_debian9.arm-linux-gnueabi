@@ -1,0 +1,12 @@
+FROM debian:stretch
+
+WORKDIR /home/work_dir
+
+RUN apt-get update -y
+RUN apt-get install -y build-essential make gawk git texinfo
+
+ENV PATH="/home/work_dir/build-tools-gcc:${PATH}"
+
+RUN git clone -b major-refactoring https://github.com/franzflasch/build-tools-gcc.git
+
+RUN "build -a arm -s gnu -v 8 -V -t"

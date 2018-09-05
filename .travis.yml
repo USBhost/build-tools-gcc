@@ -1,0 +1,13 @@
+sudo: required
+
+language: bash
+
+services:
+  - docker
+
+env:
+  matrix:
+    - OS_TYPE=debian OS_VERSION=9 BUILD_TYPE=arm-linux-gnueabi
+
+script:
+  - bash docker build -f $BASEDIR/tests/dockerfile_${OS_TYPE}${OS_VERSION}.${BUILD_TYPE} .
