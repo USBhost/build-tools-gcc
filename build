@@ -249,7 +249,7 @@ function parse_parameters() {
             "gnu:4") die "Will not build, Use Linaro instead" ;;
             "gnu:5") GCC=gcc-5.5.0
                      ISL="isl-0.17.1" ;;
-            "gnu:6") GCC=gcc-6.4.0 ;;
+            "gnu:6") GCC=gcc-6.5.0 ;;
             "gnu:7") GCC=gcc-7.3.0 ;;
             "gnu:8") GCC=gcc-8.2.0 ;;
             "gnu:9") die "GCC 9.0 is currently a WIP so there is no tarball to download! Either use the git repo or choose a new version..." ;;
