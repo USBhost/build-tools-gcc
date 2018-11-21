@@ -172,7 +172,7 @@ function setup_variables() {
     JOBS="-j$(($(nproc --all) + 1))"
 
     # Binary versions
-    BINUTILS_git="binutils-2_31_1-branch"
+    BINUTILS_git="binutils-2_31-branch"
     BINUTILS_tar="2.31.1"
     GMP="gmp-6.1.2"
     MPFR="mpfr-4.0.1"
