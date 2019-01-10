@@ -258,7 +258,7 @@ function parse_parameters() {
             "linaro:5") GCC=linaro-5.5-2017.10
                         ISL="isl-0.17.1" ;;
             "linaro:6") GCC=linaro-snapshot-6.5-2018.11 ;;
-            "linaro:7") GCC=linaro-snapshot-7.3-2018.06 ;;
+            "linaro:7") GCC=linaro-snapshot-7.4-2019.01 ;;
             "linaro:8") die "There's no such thing as Linaro 8.x Clannad..." -h ;;
             "linaro:9") die "There's no such thing as Linaro 9.x Clannad..." -h ;;
             *) die "Absent or invalid GCC version or source specified!" -h ;;
