@@ -546,7 +546,7 @@ function build_gcc() {
     header "MAKING GCC"
     cd ../build-gcc || die "GCC build folder does not exist!"
     ../gcc/configure "${CONFIGURATION[@]}" \
-                     --enable-languages=c \
+                     --enable-languages=c,c++ \
                      --target=${TARGET} \
                      --prefix="${INSTALL}"
     make all-gcc ${JOBS} || die "Error while building gcc!" -n
