@@ -224,6 +224,9 @@ function parse_parameters() {
     esac
 
     if [[ -z ${TARBALLS} ]]; then
+        # Defaults to git
+        REPO=git
+
         # Set GCC branch based on version and Linaro or not
         case "${SOURCE}:${VERSION}" in
             "gnu:4") die "Will not build, Use Linaro instead" ;;
@@ -239,7 +242,9 @@ function parse_parameters() {
                         ISL="isl-0.17.1" ;;
             "linaro:6") GCC=linaro-local/gcc-6-integration-branch ;;
             "linaro:7") GCC=linaro-local/gcc-7-integration-branch ;;
-            "linaro:8") die "There's no such thing as Linaro 8.x Clannad..." -h ;;
+            # ARM has taken the responsibility from Linaro since 8.x
+            "linaro:8") GCC=ARM/arm-8-branch
+                        REPO=svn ;;
             "linaro:9") die "There's no such thing as Linaro 9.x Clannad..." -h ;;
             *) die "Absent or invalid GCC version or source specified!" -h ;;
         esac
@@ -259,7 +264,9 @@ function parse_parameters() {
                         ISL="isl-0.17.1" ;;
             "linaro:6") GCC=linaro-snapshot-6.5-2018.11 ;;
             "linaro:7") GCC=linaro-snapshot-7.4-2019.01 ;;
-            "linaro:8") die "There's no such thing as Linaro 8.x Clannad..." -h ;;
+            # ARM has taken the responsibility from Linaro since 8.x
+            # See later in this script why it's defined like this
+            "linaro:8") GCC=8.2-2019.01 ;;
             "linaro:9") die "There's no such thing as Linaro 9.x Clannad..." -h ;;
             *) die "Absent or invalid GCC version or source specified!" -h ;;
         esac
@@ -381,9 +388,15 @@ function download_sources() {
             git_clone git://repo.or.cz/isl.git -b ${ISL}
         fi
 
-        if [[ ! -d gcc ]]; then
+        if [[ ! -d gcc-${REPO} ]]; then
             header "DOWNLOADING GCC"
-            git_clone https://git.linaro.org/toolchain/gcc.git -b ${GCC}
+            if [[ ${SOURCE} == "linaro" && ${VERSION} -ge 8 ]]; then
+                # Fetch the so-called ARM toolchain from svn
+                svn co https://gcc.gnu.org/svn/gcc/branches/${GCC} gcc-${REPO}
+            else
+                # Fetch GCC from git
+                git_clone https://git.linaro.org/toolchain/gcc.git -b ${GCC} gcc-${REPO}
+            fi
         fi
     else
         if [[ ! -f binutils-${BINUTILS_tar}.tar.xz ]]; then
@@ -396,12 +409,21 @@ function download_sources() {
             axel http://isl.gforge.inria.fr/${ISL}.tar.xz
         fi
 
+        # GNU, any version
         if [[ ${SOURCE} == "gnu" ]]; then
             if [[ ! -f ${GCC}.tar.xz ]]; then
                 header "DOWNLOADING GCC"
                 axel https://mirrors.kernel.org/gnu/gcc/${GCC}/${GCC}.tar.xz
             fi
             GCC_TAR=${GCC}.tar.xz
+        # Linaro, 8.x and newer
+        elif [[ ${VERSION} -ge 8 ]]; then
+            if [[ ! -f gcc-arm-src-snapshot-${GCC}.tar.xz ]]; then
+                header "DOWNLOADING GCC"
+                axel https://developer.arm.com/-/media/Files/downloads/gnu-a/${GCC}/gcc-arm-src-snapshot-${GCC}.tar.xz
+            fi
+            GCC_TAR=gcc-arm-src-snapshot-${GCC}.tar.xz
+        # Linaro, 7.x and older
         else
             if [[ ! -f gcc-${GCC}.tar.gz ]]; then
                 header "DOWNLOADING GCC"
@@ -435,7 +457,14 @@ function extract_sources() {
     if [[ -n ${TARBALLS} ]]; then
         extract binutils-${BINUTILS_tar}.tar.xz ../binutils
         extract ${ISL}.tar.xz ../${ISL}
-        extract ${GCC_TAR} ../gcc
+        if [[ ${SOURCE} == "linaro" && ${VERSION} -ge 8 ]]; then
+            # We can't use extract function here as this ships other GNU tools
+            # Only extract GCC source and later rename it to gcc
+            pxz -d < ${GCC_TAR} | tar -xC .. gcc-arm-src-snapshot-${GCC}
+            mv -f ../gcc-arm-src-snapshot-${GCC} ../gcc
+        else
+            extract ${GCC_TAR} ../gcc
+        fi
     fi
 }
 
@@ -458,13 +487,21 @@ function update_repos() {
             git checkout ${BINUTILS_git} || git checkout -b ${BINUTILS_git} ${BRANCH}
             git reset --hard ${BRANCH}
         )
-        (
-            cd gcc || die "GCC did not get cloned properly!"
-            [[ -n ${FULL_SOURCE} ]] && BRANCH=origin/${GCC} || BRANCH=FETCH_HEAD
-            git_fetch origin ${GCC}
-            git checkout ${GCC} || git checkout -b ${GCC} ${BRANCH}
-            git reset --hard ${BRANCH}
-        )
+        if [[ ${SOURCE} == "linaro" && ${VERSION} -ge 8 ]]; then
+            # Update from SVN
+            (   cd gcc-${REPO} || die "GCC did not get fetched properly!"
+                svn up
+            )
+        else
+            # Update from git
+            (
+                cd gcc-${REPO} || die "GCC did not get cloned properly!"
+                [[ -n ${FULL_SOURCE} ]] && BRANCH=origin/${GCC} || BRANCH=FETCH_HEAD
+                git_fetch origin ${GCC}
+                git checkout ${GCC} || git checkout -b ${GCC} ${BRANCH}
+                git reset --hard ${BRANCH}
+            )
+        fi
     else
         if [[ -d isl ]]; then
             (
@@ -478,7 +515,7 @@ function update_repos() {
 
     [[ ! -d linux ]] && ln -s sources/linux linux
     [[ ! -d binutils ]] && ln -s sources/binutils binutils
-    [[ ! -d gcc ]] && ln -s sources/gcc gcc
+    [[ ! -d gcc ]] && ln -s sources/gcc-${REPO} gcc
 }
 
 
