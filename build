@@ -224,6 +224,9 @@ function parse_parameters() {
     esac
 
     if [[ -z ${TARBALLS} ]]; then
+        # Defaults to git
+        REPO=git
+
         # Set GCC branch based on version and Linaro or not
         case "${SOURCE}:${VERSION}" in
             "gnu:4") die "Will not build, Use Linaro instead" ;;
@@ -239,7 +242,9 @@ function parse_parameters() {
                         ISL="isl-0.17.1" ;;
             "linaro:6") GCC=linaro-local/gcc-6-integration-branch ;;
             "linaro:7") GCC=linaro-local/gcc-7-integration-branch ;;
-            "linaro:8") die "There's no such thing as Linaro 8.x Clannad..." -h ;;
+            # ARM has taken the responsibility from Linaro since 8.x
+            "linaro:8") GCC=ARM/arm-8-branch
+                        REPO=svn ;;
             "linaro:9") die "There's no such thing as Linaro 9.x Clannad..." -h ;;
             *) die "Absent or invalid GCC version or source specified!" -h ;;
         esac
@@ -250,7 +255,7 @@ function parse_parameters() {
             "gnu:5") GCC=gcc-5.5.0
                      ISL="isl-0.17.1" ;;
             "gnu:6") GCC=gcc-6.5.0 ;;
-            "gnu:7") GCC=gcc-7.3.0 ;;
+            "gnu:7") GCC=gcc-7.4.0 ;;
             "gnu:8") GCC=gcc-8.2.0 ;;
             "gnu:9") die "GCC 9.0 is currently a WIP so there is no tarball to download! Either use the git repo or choose a new version..." ;;
             "linaro:4") GCC=linaro-4.9-2017.01
@@ -259,7 +264,9 @@ function parse_parameters() {
                         ISL="isl-0.17.1" ;;
             "linaro:6") GCC=linaro-snapshot-6.5-2018.11 ;;
             "linaro:7") GCC=linaro-snapshot-7.4-2019.01 ;;
-            "linaro:8") die "There's no such thing as Linaro 8.x Clannad..." -h ;;
+            # ARM has taken the responsibility from Linaro since 8.x
+            # See later in this script why it's defined like this
+            "linaro:8") GCC=8.2-2019.01 ;;
             "linaro:9") die "There's no such thing as Linaro 9.x Clannad..." -h ;;
             *) die "Absent or invalid GCC version or source specified!" -h ;;
         esac
@@ -295,6 +302,19 @@ function build_binaries() {
     PREBUILTS_BIN=${ROOT}/prebuilts/bin
     mkdir -p sources
 
+    if [[ ! -f ${PREBUILTS_BIN}/txt2man ]]; then
+        TXT2MAN=${ROOT}/sources/txt2man
+        [[ ! -d ${TXT2MAN} ]] && git -C "$(dirname "${TXT2MAN}")" clone --depth=1 https://github.com/mvertes/txt2man
+        git -C "${TXT2MAN}" clean -fxdq
+        git -C "${TXT2MAN}" pull
+        (
+            cd "${TXT2MAN}" || die "Issue with cloning txt2man source!"
+            make prefix="$(dirname "${PREBUILTS_BIN}")" install || die "Error installing txt2man!"
+        )
+    fi
+
+    export PATH=${PREBUILTS_BIN}:${PATH}
+
     if [[ ! -f ${PREBUILTS_BIN}/axel ]]; then
         AXEL=${ROOT}/sources/axel
         [[ ! -d ${AXEL} ]] && git -C "$(dirname "${AXEL}")" clone --depth=1 https://github.com/axel-download-accelerator/axel
@@ -326,8 +346,6 @@ function build_binaries() {
         make -C "${PXZ}" ${JOBS} pxz || die "Error building pxz!"
         mv "${PXZ}"/pxz "${PREBUILTS_BIN}"
     fi
-
-    export PATH=${PREBUILTS_BIN}:${PATH}
 }
 
 
@@ -335,7 +353,7 @@ function download_sources() {
     cd sources || die "Failed to create sources directory!"
 
     if [[ ! -f ${MPFR}.tar.xz ]]; then
-        header "DOWNLOADING MPR"
+        header "DOWNLOADING MPFR"
         axel https://www.mpfr.org/mpfr-current/${MPFR}.tar.xz
     fi
 
@@ -356,7 +374,7 @@ function download_sources() {
 
     if [[ ! -f linux-${LINUX}.tar.xz ]]; then
         header "DOWNLOADING LINUX KERNEL"
-        axel https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-${LINUX}.tar.xz
+        axel https://cdn.kernel.org/pub/linux/kernel/v${LINUX/.*}.x/linux-${LINUX}.tar.xz
     fi
 
     if [[ -z ${TARBALLS} ]]; then
@@ -370,9 +388,15 @@ function download_sources() {
             git_clone git://repo.or.cz/isl.git -b ${ISL}
         fi
 
-        if [[ ! -d gcc ]]; then
+        if [[ ! -d gcc-${REPO} ]]; then
             header "DOWNLOADING GCC"
-            git_clone https://git.linaro.org/toolchain/gcc.git -b ${GCC}
+            if [[ ${SOURCE} == "linaro" && ${VERSION} -ge 8 ]]; then
+                # Fetch the so-called ARM toolchain from svn
+                svn co https://gcc.gnu.org/svn/gcc/branches/${GCC} gcc-${REPO}
+            else
+                # Fetch GCC from git
+                git_clone https://git.linaro.org/toolchain/gcc.git -b ${GCC} gcc-${REPO}
+            fi
         fi
     else
         if [[ ! -f binutils-${BINUTILS_tar}.tar.xz ]]; then
@@ -385,12 +409,21 @@ function download_sources() {
             axel http://isl.gforge.inria.fr/${ISL}.tar.xz
         fi
 
+        # GNU, any version
         if [[ ${SOURCE} == "gnu" ]]; then
-            if [[ ! -f ${GCC}.tar.${EXT:-xz} ]]; then
+            if [[ ! -f ${GCC}.tar.xz ]]; then
                 header "DOWNLOADING GCC"
-                axel https://mirrors.kernel.org/gnu/gcc/${GCC}/${GCC}.tar."${EXT:-gz}"
+                axel https://mirrors.kernel.org/gnu/gcc/${GCC}/${GCC}.tar.xz
             fi
-            GCC_TAR=${GCC}.tar.${EXT:-gz}
+            GCC_TAR=${GCC}.tar.xz
+        # Linaro, 8.x and newer
+        elif [[ ${VERSION} -ge 8 ]]; then
+            if [[ ! -f gcc-arm-src-snapshot-${GCC}.tar.xz ]]; then
+                header "DOWNLOADING GCC"
+                axel https://developer.arm.com/-/media/Files/downloads/gnu-a/${GCC}/gcc-arm-src-snapshot-${GCC}.tar.xz
+            fi
+            GCC_TAR=gcc-arm-src-snapshot-${GCC}.tar.xz
+        # Linaro, 7.x and older
         else
             if [[ ! -f gcc-${GCC}.tar.gz ]]; then
                 header "DOWNLOADING GCC"
@@ -424,7 +457,14 @@ function extract_sources() {
     if [[ -n ${TARBALLS} ]]; then
         extract binutils-${BINUTILS_tar}.tar.xz ../binutils
         extract ${ISL}.tar.xz ../${ISL}
-        extract ${GCC_TAR} ../gcc
+        if [[ ${SOURCE} == "linaro" && ${VERSION} -ge 8 ]]; then
+            # We can't use extract function here as this ships other GNU tools
+            # Only extract GCC source and later rename it to gcc
+            pxz -d < ${GCC_TAR} | tar -xC .. gcc-arm-src-snapshot-${GCC}
+            mv -f ../gcc-arm-src-snapshot-${GCC} ../gcc
+        else
+            extract ${GCC_TAR} ../gcc
+        fi
     fi
 }
 
@@ -447,13 +487,21 @@ function update_repos() {
             git checkout ${BINUTILS_git} || git checkout -b ${BINUTILS_git} ${BRANCH}
             git reset --hard ${BRANCH}
         )
-        (
-            cd gcc || die "GCC did not get cloned properly!"
-            [[ -n ${FULL_SOURCE} ]] && BRANCH=origin/${GCC} || BRANCH=FETCH_HEAD
-            git_fetch origin ${GCC}
-            git checkout ${GCC} || git checkout -b ${GCC} ${BRANCH}
-            git reset --hard ${BRANCH}
-        )
+        if [[ ${SOURCE} == "linaro" && ${VERSION} -ge 8 ]]; then
+            # Update from SVN
+            (   cd gcc-${REPO} || die "GCC did not get fetched properly!"
+                svn up
+            )
+        else
+            # Update from git
+            (
+                cd gcc-${REPO} || die "GCC did not get cloned properly!"
+                [[ -n ${FULL_SOURCE} ]] && BRANCH=origin/${GCC} || BRANCH=FETCH_HEAD
+                git_fetch origin ${GCC}
+                git checkout ${GCC} || git checkout -b ${GCC} ${BRANCH}
+                git reset --hard ${BRANCH}
+            )
+        fi
     else
         if [[ -d isl ]]; then
             (
@@ -465,9 +513,8 @@ function update_repos() {
 
     cd ..
 
-    [[ ! -d linux ]] && ln -s sources/linux linux
     [[ ! -d binutils ]] && ln -s sources/binutils binutils
-    [[ ! -d gcc ]] && ln -s sources/gcc gcc
+    [[ ! -d gcc ]] && ln -s sources/gcc-${REPO} gcc
 }
 
 
@@ -535,7 +582,7 @@ function build_gcc() {
     header "MAKING GCC"
     cd ../build-gcc || die "GCC build folder does not exist!"
     ../gcc/configure "${CONFIGURATION[@]}" \
-                     --enable-languages=c \
+                     --enable-languages=c,c++ \
                      --target=${TARGET} \
                      --prefix="${INSTALL}"
     make all-gcc ${JOBS} || die "Error while building gcc!" -n
