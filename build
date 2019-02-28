@@ -229,7 +229,10 @@ function parse_parameters() {
 
         # Set GCC branch based on version and Linaro or not
         case "${SOURCE}:${VERSION}" in
-            "gnu:4") die "Will not build, Use Linaro instead" ;;
+            "gnu:4") GCC=gcc-4_9-branch
+                     BINUTILS_git="binutils-2_29-branch"
+                     GLIBC="glibc-2.26"
+                     ISL="isl-0.17.1" ;;
             "gnu:5") GCC=gcc-5-branch
                      GLIBC="glibc-2.27"
                      ISL="isl-0.17.1" ;;
@@ -254,7 +257,11 @@ function parse_parameters() {
     else
         # Set GCC branch based on version and Linaro or not
         case "${SOURCE}:${VERSION}" in
-            "gnu:4") die "Will not build, Use Linaro instead" ;;
+            "gnu:4") GCC=gcc-4.9.4
+                     BINUTILS_tar="2.29.1"
+                     GLIBC="glibc-2.26"
+                     ISL="isl-0.17.1"
+                     EXT=gz ;;
             "gnu:5") GCC=gcc-5.5.0
                      GLIBC="glibc-2.27"
                      ISL="isl-0.17.1" ;;
@@ -406,7 +413,7 @@ function download_sources() {
         fi
     else
         if [[ ! -f binutils-${BINUTILS_tar}.tar.xz ]]; then
-            header "DOWNLOADING BINUTILS"
+            header "DOWNLOADING BINUTILS ${BINUTILS_tar} FOR GCC ${VERSION}"
             axel https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_tar}.tar.xz
         fi
 
@@ -417,11 +424,11 @@ function download_sources() {
 
         # GNU, any version
         if [[ ${SOURCE} == "gnu" ]]; then
-            if [[ ! -f ${GCC}.tar.xz ]]; then
+            if [[ ! -f ${GCC}.tar.${EXT:-xz} ]]; then
                 header "DOWNLOADING GCC"
-                axel https://mirrors.kernel.org/gnu/gcc/${GCC}/${GCC}.tar.xz
+                axel https://mirrors.kernel.org/gnu/gcc/${GCC}/${GCC}.tar.${EXT:-xz}
             fi
-            GCC_TAR=${GCC}.tar.xz
+            GCC_TAR=${GCC}.tar.${EXT:-xz}
         # Linaro, 8.x and newer
         elif [[ ${VERSION} -ge 8 ]]; then
             if [[ ! -f gcc-arm-src-snapshot-${GCC}.tar.xz ]]; then
