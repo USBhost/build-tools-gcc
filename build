@@ -231,14 +231,17 @@ function parse_parameters() {
         case "${SOURCE}:${VERSION}" in
             "gnu:4") die "Will not build, Use Linaro instead" ;;
             "gnu:5") GCC=gcc-5-branch
+                     GLIBC="glibc-2.27"
                      ISL="isl-0.17.1" ;;
             "gnu:6") GCC=gcc-6-branch ;;
             "gnu:7") GCC=gcc-7-branch ;;
             "gnu:8") GCC=gcc-8-branch ;;
             "gnu:9") GCC=master ;;
             "linaro:4") GCC=linaro-local/releases/linaro-4.9-2017.01
+                        GLIBC="glibc-2.27"
                         ISL="isl-0.17.1" ;;
             "linaro:5") GCC=linaro-local/gcc-5-integration-branch
+                        GLIBC="glibc-2.27"
                         ISL="isl-0.17.1" ;;
             "linaro:6") GCC=linaro-local/gcc-6-integration-branch ;;
             "linaro:7") GCC=linaro-local/gcc-7-integration-branch ;;
@@ -253,14 +256,17 @@ function parse_parameters() {
         case "${SOURCE}:${VERSION}" in
             "gnu:4") die "Will not build, Use Linaro instead" ;;
             "gnu:5") GCC=gcc-5.5.0
+                     GLIBC="glibc-2.27"
                      ISL="isl-0.17.1" ;;
             "gnu:6") GCC=gcc-6.5.0 ;;
             "gnu:7") GCC=gcc-7.4.0 ;;
             "gnu:8") GCC=gcc-8.3.0 ;;
             "gnu:9") die "GCC 9.0 is currently a WIP so there is no tarball to download! Either use the git repo or choose a new version..." ;;
             "linaro:4") GCC=linaro-4.9-2017.01
+                        GLIBC="glibc-2.27"
                         ISL="isl-0.17.1" ;;
             "linaro:5") GCC=linaro-5.5-2017.10
+                        GLIBC="glibc-2.27"
                         ISL="isl-0.17.1" ;;
             "linaro:6") GCC=linaro-snapshot-6.5-2018.11 ;;
             "linaro:7") GCC=linaro-snapshot-7.4-2019.01 ;;
@@ -368,7 +374,7 @@ function download_sources() {
     fi
 
     if [[ ! -f ${GLIBC}.tar.xz ]]; then
-        header "DOWNLOADING GLIBC"
+        header "DOWNLOADING GLIBC ${GLIBC} FOR GCC ${VERSION}"
         axel https://ftp.gnu.org/gnu/glibc/${GLIBC}.tar.xz
     fi
 
