@@ -560,6 +560,9 @@ function setup_env() {
     else
         ln -s -f "${ROOT}/isl" isl
     fi
+
+    # GCC 4.9 (ARM/i686): error: ‘SIGSEGV' was not declared in this scope
+    [[ ${VERSION} -eq 4 ]] && curl -s https://raw.githubusercontent.com/buildroot/buildroot/master/package/gcc/4.9.4/942-asan-fix-missing-include-signal-h.patch | patch -Np1
     cd ..
 
     if [[ -z ${VERBOSE} ]]; then
