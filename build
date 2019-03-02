@@ -563,6 +563,10 @@ function setup_env() {
 
     # GCC 4.9 (ARM/i686): error: ‘SIGSEGV' was not declared in this scope
     [[ ${VERSION} -eq 4 ]] && curl -s https://raw.githubusercontent.com/buildroot/buildroot/master/package/gcc/4.9.4/942-asan-fix-missing-include-signal-h.patch | patch -Np1
+    # GNU GCC 6-8 (i686): error: ‘PATH_MAX' undeclared here (not in a function)
+    [[ ${VERSION} -ge 6 && ${VERSION} -le 8 ]] && curl -s https://gist.githubusercontent.com/krasCGQ/9e859c91e2e7c1fe0ffe009f4edd1d22/raw/114f29c50c15db2bc4ca9c2de348ad0fb3055ad1/53faaf1da220f5e904a1e8c8b343e91121218f82.patch | patch -Np1
+    # GNU GCC 9 (any): error: ‘PATH_MAX' was not declared on this scope
+    [[ ${SOURCE} = "gnu" && ${VERSION} -eq 9 ]] && curl -s https://gist.githubusercontent.com/krasCGQ/9e859c91e2e7c1fe0ffe009f4edd1d22/raw/114f29c50c15db2bc4ca9c2de348ad0fb3055ad1/55a6998c4d5ce0ccd20bb0572915c2c94c0dc138.patch | patch -Np1
     cd ..
 
     if [[ -z ${VERBOSE} ]]; then
