@@ -514,6 +514,7 @@ function update_repos() {
                 cd gcc-${REPO} || die "GCC did not get cloned properly!"
                 [[ -n ${FULL_SOURCE} ]] && BRANCH=origin/${GCC} || BRANCH=FETCH_HEAD
                 git_fetch origin ${GCC}
+                git reset --hard
                 git checkout ${GCC} || git checkout -b ${GCC} ${BRANCH}
                 git reset --hard ${BRANCH}
             )
