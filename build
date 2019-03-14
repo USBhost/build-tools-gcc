@@ -417,7 +417,7 @@ function download_sources() {
         fi
 
         # GNU, any version
-        if [[ ${SOURCE} == "gnu" ]]; then
+        if [[ ${SOURCE} = "gnu" ]]; then
             if [[ ! -f ${GCC}.tar.${EXT:-xz} ]]; then
                 header "DOWNLOADING GCC"
                 axel https://mirrors.kernel.org/gnu/gcc/${GCC}/${GCC}.tar.${EXT:-xz}
@@ -464,7 +464,7 @@ function extract_sources() {
     if [[ -n ${TARBALLS} ]]; then
         extract binutils-${BINUTILS_tar}.tar.xz ../binutils
         extract ${ISL}.tar.xz ../${ISL}
-        if [[ ${SOURCE} == "linaro" && ${VERSION} -ge 8 ]]; then
+        if [[ ${SOURCE} = "linaro" && ${VERSION} -ge 8 ]]; then
             # We can't use extract function here as this ships other GNU tools
             # Only extract GCC source and later rename it to gcc
             pxz -d < ${GCC_TAR} | tar -xC .. gcc-arm-src-snapshot-${GCC}
