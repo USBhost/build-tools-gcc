@@ -227,9 +227,6 @@ function parse_parameters() {
     [[ ${ARCH} = "i686" || ${ARCH} = "x86_64" ]] && KERNEL_ARCH=x86 || KERNEL_ARCH=${ARCH}
 
     if [[ -z ${TARBALLS} ]]; then
-        # Defaults to git
-        REPO=git
-
         # Set GCC branch based on version and Linaro or not
         case "${SOURCE}:${VERSION}" in
             "gnu:4") GCC=gcc-4_9-branch
@@ -252,8 +249,7 @@ function parse_parameters() {
             "linaro:6") GCC=linaro-local/gcc-6-integration-branch ;;
             "linaro:7") GCC=linaro-local/gcc-7-integration-branch ;;
             # ARM has taken the responsibility from Linaro since 8.x
-            "linaro:8") GCC=ARM/arm-8-branch
-                        REPO=svn ;;
+            "linaro:8") GCC=linaro-local/ARM/arm-8-branch ;;
             "linaro:9") die "There's no such thing as Linaro 9.x Clannad..." -h ;;
             *) die "Absent or invalid GCC version or source specified!" -h ;;
         esac
@@ -404,15 +400,9 @@ function download_sources() {
             git_clone git://repo.or.cz/isl.git -b ${ISL}
         fi
 
-        if [[ ! -d gcc-${REPO} ]]; then
+        if [[ ! -d gcc ]]; then
             header "DOWNLOADING GCC"
-            if [[ ${SOURCE} == "linaro" && ${VERSION} -ge 8 ]]; then
-                # Fetch the so-called ARM toolchain from svn
-                svn co https://gcc.gnu.org/svn/gcc/branches/${GCC} gcc-${REPO}
-            else
-                # Fetch GCC from git
-                git_clone https://git.linaro.org/toolchain/gcc.git -b ${GCC} gcc-${REPO}
-            fi
+            git_clone https://git.linaro.org/toolchain/gcc.git -b ${GCC}
         fi
     else
         if [[ ! -f binutils-${BINUTILS_tar}.tar.xz ]]; then
@@ -503,22 +493,14 @@ function update_repos() {
             git checkout ${BINUTILS_git} || git checkout -b ${BINUTILS_git} ${BRANCH}
             git reset --hard ${BRANCH}
         )
-        if [[ ${SOURCE} == "linaro" && ${VERSION} -ge 8 ]]; then
-            # Update from SVN
-            (   cd gcc-${REPO} || die "GCC did not get fetched properly!"
-                svn up
-            )
-        else
-            # Update from git
-            (
-                cd gcc-${REPO} || die "GCC did not get cloned properly!"
-                [[ -n ${FULL_SOURCE} ]] && BRANCH=origin/${GCC} || BRANCH=FETCH_HEAD
-                git_fetch origin ${GCC}
-                git reset --hard
-                git checkout ${GCC} || git checkout -b ${GCC} ${BRANCH}
-                git reset --hard ${BRANCH}
-            )
-        fi
+        (
+            cd gcc || die "GCC did not get cloned properly!"
+            [[ -n ${FULL_SOURCE} ]] && BRANCH=origin/${GCC} || BRANCH=FETCH_HEAD
+            git_fetch origin ${GCC}
+            git reset --hard
+            git checkout ${GCC} || git checkout -b ${GCC} ${BRANCH}
+            git reset --hard ${BRANCH}
+        )
     else
         if [[ -d isl ]]; then
             (
@@ -531,7 +513,7 @@ function update_repos() {
     cd ..
 
     [[ ! -d binutils ]] && ln -s sources/binutils binutils
-    [[ ! -d gcc ]] && ln -s sources/gcc-${REPO} gcc
+    [[ ! -d gcc ]] && ln -s sources/gcc gcc
 }
 
 
