@@ -219,7 +219,8 @@ function parse_parameters() {
         "arm") TARGET="arm-linux-gnueabi" ;;
         "arm64") TARGET="aarch64-linux-gnu" ;;
         "i686") TARGET="i686-linux-gnu" ;;
-        "x86_64") TARGET="x86_64-linux-gnu" ;;
+        "x86_64") [[ ${VERSION} -le 5 ]] && die "Will not build, Use newer version instead" -n
+                  TARGET="x86_64-linux-gnu" ;;
         *) die "Absent or invalid arch specified!" -h ;;
     esac
 
