@@ -47,7 +47,7 @@ function help_menu() {
     echo "${BOLD}REQUIRED PARAMETERS:${RST}"
     echo "  -a  | --arch:        Possible values: arm, arm64, i686, or x86_64. This is the toolchain's target architecture."
     echo "  -s  | --source:      Possible values: gnu or linaro. This is the GCC source (GNU official vs. Linaro fork)."
-    echo "  -v  | --version:     Possible values: (4, 5, 6, 7, 8*, and 9* [*GNU only]). This is the GCC version to build."
+    echo "  -v  | --version:     Possible values: (4, 5, 6, 7, 8, and 9* [*GNU only]). This is the GCC version to build."
     echo
     echo "${BOLD}OPTIONAL PARAMETERS:${RST}"
     echo "  -f  | --full-src:    Download full git repos instead of shallow clones"
@@ -179,7 +179,7 @@ function setup_variables() {
     MPC="mpc-1.1.0"
     ISL="isl-0.20"
     GLIBC="glibc-2.29"
-    LINUX="4.20"
+    LINUX="5.0"
 
     # Start of script
     START=$(date +%s)
@@ -219,48 +219,61 @@ function parse_parameters() {
         "arm") TARGET="arm-linux-gnueabi" ;;
         "arm64") TARGET="aarch64-linux-gnu" ;;
         "i686") TARGET="i686-linux-gnu" ;;
-        "x86_64") TARGET="x86_64-linux-gnu" ;;
+        "x86_64") [[ ${VERSION} -le 5 ]] && die "Will not build, Use newer version instead" -n
+                  TARGET="x86_64-linux-gnu" ;;
         *) die "Absent or invalid arch specified!" -h ;;
     esac
 
-    if [[ -z ${TARBALLS} ]]; then
-        # Defaults to git
-        REPO=git
+    # Kernel architecture; i686 and x86_64 targets use x86
+    [[ ${ARCH} = "i686" || ${ARCH} = "x86_64" ]] && KERNEL_ARCH=x86 || KERNEL_ARCH=${ARCH}
 
+    if [[ -z ${TARBALLS} ]]; then
         # Set GCC branch based on version and Linaro or not
         case "${SOURCE}:${VERSION}" in
-            "gnu:4") die "Will not build, Use Linaro instead" ;;
+            "gnu:4") GCC=gcc-4_9-branch
+                     BINUTILS_git="binutils-2_29-branch"
+                     GLIBC="glibc-2.26"
+                     ISL="isl-0.17.1" ;;
             "gnu:5") GCC=gcc-5-branch
+                     GLIBC="glibc-2.27"
                      ISL="isl-0.17.1" ;;
             "gnu:6") GCC=gcc-6-branch ;;
             "gnu:7") GCC=gcc-7-branch ;;
             "gnu:8") GCC=gcc-8-branch ;;
             "gnu:9") GCC=master ;;
             "linaro:4") GCC=linaro-local/releases/linaro-4.9-2017.01
+                        GLIBC="glibc-2.27"
                         ISL="isl-0.17.1" ;;
             "linaro:5") GCC=linaro-local/gcc-5-integration-branch
+                        GLIBC="glibc-2.27"
                         ISL="isl-0.17.1" ;;
             "linaro:6") GCC=linaro-local/gcc-6-integration-branch ;;
             "linaro:7") GCC=linaro-local/gcc-7-integration-branch ;;
             # ARM has taken the responsibility from Linaro since 8.x
-            "linaro:8") GCC=ARM/arm-8-branch
-                        REPO=svn ;;
+            "linaro:8") GCC=linaro-local/ARM/arm-8-branch ;;
             "linaro:9") die "There's no such thing as Linaro 9.x Clannad..." -h ;;
             *) die "Absent or invalid GCC version or source specified!" -h ;;
         esac
     else
         # Set GCC branch based on version and Linaro or not
         case "${SOURCE}:${VERSION}" in
-            "gnu:4") die "Will not build, Use Linaro instead" ;;
+            "gnu:4") GCC=gcc-4.9.4
+                     BINUTILS_tar="2.29.1"
+                     GLIBC="glibc-2.26"
+                     ISL="isl-0.17.1"
+                     EXT=gz ;;
             "gnu:5") GCC=gcc-5.5.0
+                     GLIBC="glibc-2.27"
                      ISL="isl-0.17.1" ;;
             "gnu:6") GCC=gcc-6.5.0 ;;
             "gnu:7") GCC=gcc-7.4.0 ;;
-            "gnu:8") GCC=gcc-8.2.0 ;;
+            "gnu:8") GCC=gcc-8.3.0 ;;
             "gnu:9") die "GCC 9.0 is currently a WIP so there is no tarball to download! Either use the git repo or choose a new version..." ;;
             "linaro:4") GCC=linaro-4.9-2017.01
+                        GLIBC="glibc-2.27"
                         ISL="isl-0.17.1" ;;
             "linaro:5") GCC=linaro-5.5-2017.10
+                        GLIBC="glibc-2.27"
                         ISL="isl-0.17.1" ;;
             "linaro:6") GCC=linaro-snapshot-6.5-2018.11 ;;
             "linaro:7") GCC=linaro-snapshot-7.4-2019.01 ;;
@@ -368,7 +381,7 @@ function download_sources() {
     fi
 
     if [[ ! -f ${GLIBC}.tar.xz ]]; then
-        header "DOWNLOADING GLIBC"
+        header "DOWNLOADING GLIBC ${GLIBC} FOR GCC ${VERSION}"
         axel https://ftp.gnu.org/gnu/glibc/${GLIBC}.tar.xz
     fi
 
@@ -388,19 +401,13 @@ function download_sources() {
             git_clone git://repo.or.cz/isl.git -b ${ISL}
         fi
 
-        if [[ ! -d gcc-${REPO} ]]; then
+        if [[ ! -d gcc ]]; then
             header "DOWNLOADING GCC"
-            if [[ ${SOURCE} == "linaro" && ${VERSION} -ge 8 ]]; then
-                # Fetch the so-called ARM toolchain from svn
-                svn co https://gcc.gnu.org/svn/gcc/branches/${GCC} gcc-${REPO}
-            else
-                # Fetch GCC from git
-                git_clone https://git.linaro.org/toolchain/gcc.git -b ${GCC} gcc-${REPO}
-            fi
+            git_clone https://git.linaro.org/toolchain/gcc.git -b ${GCC}
         fi
     else
         if [[ ! -f binutils-${BINUTILS_tar}.tar.xz ]]; then
-            header "DOWNLOADING BINUTILS"
+            header "DOWNLOADING BINUTILS ${BINUTILS_tar} FOR GCC ${VERSION}"
             axel https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_tar}.tar.xz
         fi
 
@@ -410,12 +417,12 @@ function download_sources() {
         fi
 
         # GNU, any version
-        if [[ ${SOURCE} == "gnu" ]]; then
-            if [[ ! -f ${GCC}.tar.xz ]]; then
+        if [[ ${SOURCE} = "gnu" ]]; then
+            if [[ ! -f ${GCC}.tar.${EXT:-xz} ]]; then
                 header "DOWNLOADING GCC"
-                axel https://mirrors.kernel.org/gnu/gcc/${GCC}/${GCC}.tar.xz
+                axel https://mirrors.kernel.org/gnu/gcc/${GCC}/${GCC}.tar.${EXT:-xz}
             fi
-            GCC_TAR=${GCC}.tar.xz
+            GCC_TAR=${GCC}.tar.${EXT:-xz}
         # Linaro, 8.x and newer
         elif [[ ${VERSION} -ge 8 ]]; then
             if [[ ! -f gcc-arm-src-snapshot-${GCC}.tar.xz ]]; then
@@ -457,7 +464,7 @@ function extract_sources() {
     if [[ -n ${TARBALLS} ]]; then
         extract binutils-${BINUTILS_tar}.tar.xz ../binutils
         extract ${ISL}.tar.xz ../${ISL}
-        if [[ ${SOURCE} == "linaro" && ${VERSION} -ge 8 ]]; then
+        if [[ ${SOURCE} = "linaro" && ${VERSION} -ge 8 ]]; then
             # We can't use extract function here as this ships other GNU tools
             # Only extract GCC source and later rename it to gcc
             pxz -d < ${GCC_TAR} | tar -xC .. gcc-arm-src-snapshot-${GCC}
@@ -487,21 +494,14 @@ function update_repos() {
             git checkout ${BINUTILS_git} || git checkout -b ${BINUTILS_git} ${BRANCH}
             git reset --hard ${BRANCH}
         )
-        if [[ ${SOURCE} == "linaro" && ${VERSION} -ge 8 ]]; then
-            # Update from SVN
-            (   cd gcc-${REPO} || die "GCC did not get fetched properly!"
-                svn up
-            )
-        else
-            # Update from git
-            (
-                cd gcc-${REPO} || die "GCC did not get cloned properly!"
-                [[ -n ${FULL_SOURCE} ]] && BRANCH=origin/${GCC} || BRANCH=FETCH_HEAD
-                git_fetch origin ${GCC}
-                git checkout ${GCC} || git checkout -b ${GCC} ${BRANCH}
-                git reset --hard ${BRANCH}
-            )
-        fi
+        (
+            cd gcc || die "GCC did not get cloned properly!"
+            [[ -n ${FULL_SOURCE} ]] && BRANCH=origin/${GCC} || BRANCH=FETCH_HEAD
+            git_fetch origin ${GCC}
+            git reset --hard
+            git checkout ${GCC} || git checkout -b ${GCC} ${BRANCH}
+            git reset --hard ${BRANCH}
+        )
     else
         if [[ -d isl ]]; then
             (
@@ -514,7 +514,7 @@ function update_repos() {
     cd ..
 
     [[ ! -d binutils ]] && ln -s sources/binutils binutils
-    [[ ! -d gcc ]] && ln -s sources/gcc-${REPO} gcc
+    [[ ! -d gcc ]] && ln -s sources/gcc gcc
 }
 
 
@@ -544,6 +544,13 @@ function setup_env() {
     else
         ln -s -f "${ROOT}/isl" isl
     fi
+
+    # GCC 4.9 (ARM/i686): error: ‘SIGSEGV' was not declared in this scope
+    [[ ${VERSION} -eq 4 ]] && curl -s https://raw.githubusercontent.com/buildroot/buildroot/master/package/gcc/4.9.4/942-asan-fix-missing-include-signal-h.patch | patch -Np1
+    # GNU GCC 6-8 (i686): error: ‘PATH_MAX' undeclared here (not in a function)
+    [[ ${VERSION} -ge 6 && ${VERSION} -le 8 ]] && curl -s https://gist.githubusercontent.com/krasCGQ/9e859c91e2e7c1fe0ffe009f4edd1d22/raw/114f29c50c15db2bc4ca9c2de348ad0fb3055ad1/53faaf1da220f5e904a1e8c8b343e91121218f82.patch | patch -Np1
+    # GNU GCC 9 (any): error: ‘PATH_MAX' was not declared on this scope
+    [[ ${SOURCE} = "gnu" && ${VERSION} -eq 9 ]] && curl -s https://gist.githubusercontent.com/krasCGQ/9e859c91e2e7c1fe0ffe009f4edd1d22/raw/114f29c50c15db2bc4ca9c2de348ad0fb3055ad1/55a6998c4d5ce0ccd20bb0572915c2c94c0dc138.patch | patch -Np1
     cd ..
 
     if [[ -z ${VERBOSE} ]]; then
@@ -571,7 +578,7 @@ function build_binutils() {
 function build_headers() {
     header "MAKING LINUX HEADERS"
     cd ../linux || die "Linux kernel folder does not exist!"
-    make ARCH="${ARCH}" \
+    make ARCH="${KERNEL_ARCH}" \
         INSTALL_HDR_PATH="${INSTALL}/${TARGET}" \
         headers_install ${JOBS} || die "Error while building/installing Linux headers!" -n
 }
@@ -609,7 +616,7 @@ function build_glibc() {
     install csu/crt1.o csu/crti.o csu/crtn.o "${INSTALL}/${TARGET}/lib"
     ${TARGET}-gcc -nostdlib -nostartfiles -shared -x c /dev/null -o "${INSTALL}/${TARGET}/lib/libc.so"
     touch "${INSTALL}/${TARGET}/include/gnu/stubs.h"
-    if [[ ${ARCH} = "x86_64" || ${ARCH} = "i686" ]]; then
+    if [[ ${ARCH} = "x86_64" ]]; then
         make ${JOBS} || die "Error while building glibc for the host!" -n
         make install ${JOBS} || die "Error while installing glibc for the host!" -n
     else
