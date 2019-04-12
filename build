@@ -42,7 +42,9 @@ function help_menu() {
     echo
     echo "${BOLD}USAGE:${RST} ${0} <options>"
     echo
-    echo "${BOLD}EXAMPLE:${RST} ${0} -a arm64 -s linaro -v 7"
+    echo "${BOLD}EXAMPLE:${RST} ${0} -a arm64 -s linaro -v 8"
+    echo
+    echo "${BOLD}EXAMPLE:${RST} ${0} -a x86_64 -s gnu -v 8"
     echo
     echo "${BOLD}REQUIRED PARAMETERS:${RST}"
     echo "  -a  | --arch:        Possible values: arm, arm64, i686, or x86_64. This is the toolchain's target architecture."
@@ -56,6 +58,7 @@ function help_menu() {
     echo "  -p  | --package:     Possible values: gz or xz. Compresses toolchain after build."
     echo "  -t  | --tarballs:    Use tarballs for binutils, ISL, and, GCC"
     echo "  -V  | --verbose:     Make script print all output, not just errors and the ending information"
+    echo "  -j  | --jobs:        Specify the amount of threads to use. This overrides the default automatic detection"
     echo
 }
 
@@ -202,6 +205,7 @@ function parse_parameters() {
             "-p"|"--package") shift && COMPRESSION=${1} ;;
             "-t"|"--tarballs") TARBALLS=true ;;
             "-V"|"--verbose") VERBOSE=true ;;
+            "-j"|"--jobs") shift && JOBS=-j${1} ;;
 
             # HELP!
             "-h"|"--help") help_menu; exit ;;
