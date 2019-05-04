@@ -345,8 +345,8 @@ function build_binaries() {
             cd "${AXEL}" || die "Issue with cloning axel source!"
             ./autogen.sh
             ./configure --prefix="$(dirname "${PREBUILTS_BIN}")"
-            make ${JOBS} || die "Error building axel!"
-            make ${JOBS} install || die "Error installing axel!"
+            make "${JOBS}" || die "Error building axel!"
+            make "${JOBS}" install || die "Error installing axel!"
         )
     fi
 
@@ -355,7 +355,7 @@ function build_binaries() {
         [[ ! -d ${PIGZ} ]] && git -C "$(dirname "${PIGZ}")" clone --depth=1 https://github.com/madler/pigz
         git -C "${PIGZ}" clean -fxdq
         git -C "${PIGZ}" pull
-        make -C "${PIGZ}" ${JOBS} pigz || die "Error building pigz!"
+        make -C "${PIGZ}" "${JOBS}" pigz || die "Error building pigz!"
         mv "${PIGZ}"/pigz "${PREBUILTS_BIN}"
     fi
 
@@ -364,7 +364,7 @@ function build_binaries() {
         [[ ! -d ${PXZ} ]] && git -C "$(dirname "${PXZ}")" clone --depth=1 https://github.com/jnovy/pxz
         git -C "${PXZ}" clean -fxdq
         git -C "${PXZ}" pull
-        make -C "${PXZ}" ${JOBS} pxz || die "Error building pxz!"
+        make -C "${PXZ}" "${JOBS}" pxz || die "Error building pxz!"
         mv "${PXZ}"/pxz "${PREBUILTS_BIN}"
     fi
 }
@@ -577,8 +577,8 @@ function build_binutils() {
                           --target=${TARGET} \
                           --prefix="${INSTALL}" \
                           --disable-gdb
-    make ${JOBS} || die "Error while building binutils!" -n
-    make install ${JOBS} || die "Error while installing binutils!" -n
+    make "${JOBS}" || die "Error while building binutils!" -n
+    make install "${JOBS}" || die "Error while installing binutils!" -n
 }
 
 
@@ -588,7 +588,7 @@ function build_headers() {
     cd ../linux || die "Linux kernel folder does not exist!"
     make ARCH="${KERNEL_ARCH}" \
         INSTALL_HDR_PATH="${INSTALL}/${TARGET}" \
-        headers_install ${JOBS} || die "Error while building/installing Linux headers!" -n
+        headers_install "${JOBS}" || die "Error while building/installing Linux headers!" -n
 }
 
 
@@ -600,11 +600,11 @@ function build_gcc() {
                      --enable-languages=c,c++ \
                      --target=${TARGET} \
                      --prefix="${INSTALL}"
-    make all-gcc ${JOBS} || die "Error while building gcc!" -n
-    make install-gcc ${JOBS} || die "Error while installing gcc!" -n
+    make all-gcc "${JOBS}" || die "Error while building gcc!" -n
+    make install-gcc "${JOBS}" || die "Error while installing gcc!" -n
     if [[ ${ARCH} = "x86_64" ]]; then
-        make all-target-libgcc ${JOBS} || die "Error while installing libgcc for host!" -n
-        make install-target-libgcc ${JOBS} || die "Error while installing libgcc for target!" -n
+        make all-target-libgcc "${JOBS}" || die "Error while installing libgcc for host!" -n
+        make install-target-libgcc "${JOBS}" || die "Error while installing libgcc for target!" -n
     fi
 }
 
@@ -619,22 +619,22 @@ function build_glibc() {
                           --target=${TARGET} \
                           --with-headers="${INSTALL}/${TARGET}/include" \
                           "${CONFIGURATION[@]}" libc_cv_forced_unwind=yes
-    make install-bootstrap-headers=yes install-headers ${JOBS} || die "Error installing headers for glibc!" -n
-    make csu/subdir_lib ${JOBS} || die "Error while making subdir_lib for glibc!" -n
+    make install-bootstrap-headers=yes install-headers "${JOBS}" || die "Error installing headers for glibc!" -n
+    make csu/subdir_lib "${JOBS}" || die "Error while making subdir_lib for glibc!" -n
     install csu/crt1.o csu/crti.o csu/crtn.o "${INSTALL}/${TARGET}/lib"
     ${TARGET}-gcc -nostdlib -nostartfiles -shared -x c /dev/null -o "${INSTALL}/${TARGET}/lib/libc.so"
     touch "${INSTALL}/${TARGET}/include/gnu/stubs.h"
     if [[ ${ARCH} = "x86_64" ]]; then
-        make ${JOBS} || die "Error while building glibc for the host!" -n
-        make install ${JOBS} || die "Error while installing glibc for the host!" -n
+        make "${JOBS}" || die "Error while building glibc for the host!" -n
+        make install "${JOBS}" || die "Error while installing glibc for the host!" -n
     else
         cd ../build-gcc || die "GCC build folder does not exist!"
-        make all-target-libgcc ${JOBS} || die "Error while building libgcc for target!" -n
-        make install-target-libgcc ${JOBS} || die "Error while installing libgcc for target!" -n
+        make all-target-libgcc "${JOBS}" || die "Error while building libgcc for target!" -n
+        make install-target-libgcc "${JOBS}" || die "Error while installing libgcc for target!" -n
 
         cd ../build-glibc || die "glibc build folder does not exist!"
-        make ${JOBS} || die "Error while building glibc for target" -n
-        make install ${JOBS} || die "Error while installing glibc for target" -n
+        make "${JOBS}" || die "Error while building glibc for target" -n
+        make install "${JOBS}" || die "Error while installing glibc for target" -n
     fi
 }
 
@@ -643,8 +643,8 @@ function build_glibc() {
 function install_gcc() {
     header "INSTALLING GCC"
     cd ../build-gcc || die "GCC build folder does not exist!"
-    make all ${JOBS} || die "Error while compiling final toolchain!" -n
-    make install ${JOBS} || die "Error while installing final toolchain!" -n
+    make all "${JOBS}" || die "Error while compiling final toolchain!" -n
+    make install "${JOBS}" || die "Error while installing final toolchain!" -n
     cd ..
 }
 
