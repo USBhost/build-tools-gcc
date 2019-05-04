@@ -49,7 +49,7 @@ function help_menu() {
     echo "${BOLD}REQUIRED PARAMETERS:${RST}"
     echo "  -a  | --arch:        Possible values: arm, arm64, i686, or x86_64. This is the toolchain's target architecture."
     echo "  -s  | --source:      Possible values: gnu or linaro. This is the GCC source (GNU official vs. Linaro fork)."
-    echo "  -v  | --version:     Possible values: (4, 5, 6, 7, 8, and 9* [*GNU only]). This is the GCC version to build."
+    echo "  -v  | --version:     Possible values: (4, 5, 6, 7, 8, 9*, and 10* [*GNU only]). This is the GCC version to build."
     echo
     echo "${BOLD}OPTIONAL PARAMETERS:${RST}"
     echo "  -f  | --full-src:    Download full git repos instead of shallow clones"
@@ -245,6 +245,7 @@ function parse_parameters() {
             "gnu:7") GCC=gcc-7-branch ;;
             "gnu:8") GCC=gcc-8-branch ;;
             "gnu:9") GCC=gcc-9-branch ;;
+            "gnu:10") GCC=master ;;
             "linaro:4") GCC=linaro-local/releases/linaro-4.9-2017.01
                         GLIBC="glibc-2.27"
                         ISL="isl-0.17.1" ;;
@@ -256,6 +257,7 @@ function parse_parameters() {
             # ARM has taken the responsibility from Linaro since 8.x
             "linaro:8") GCC=linaro-local/ARM/arm-8-branch ;;
             "linaro:9") die "There's no such thing as Linaro 9.x Clannad..." -h ;;
+            "linaro:10") die "There's no such thing as Linaro 10.x Clannad..." -h ;;
             *) die "Absent or invalid GCC version or source specified!" -h ;;
         esac
     else
@@ -273,6 +275,7 @@ function parse_parameters() {
             "gnu:7") GCC=gcc-7.4.0 ;;
             "gnu:8") GCC=gcc-8.3.0 ;;
             "gnu:9") GCC=gcc-9.1.0 ;;
+            "gnu:10") die "GCC 10.0 is currently a WIP so there is no tarball to download! Either use the git repo or choose a new version..." ;;
             "linaro:4") GCC=linaro-4.9-2017.01
                         GLIBC="glibc-2.27"
                         ISL="isl-0.17.1" ;;
@@ -285,6 +288,7 @@ function parse_parameters() {
             # See later in this script why it's defined like this
             "linaro:8") GCC=8.3-2019.03 ;;
             "linaro:9") die "There's no such thing as Linaro 9.x Clannad..." -h ;;
+            "linaro:10") die "There's no such thing as Linaro 10.x Clannad..." -h ;;
             *) die "Absent or invalid GCC version or source specified!" -h ;;
         esac
     fi
