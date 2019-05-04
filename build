@@ -49,16 +49,16 @@ function help_menu() {
     echo "${BOLD}REQUIRED PARAMETERS:${RST}"
     echo "  -a  | --arch:        Possible values: arm, arm64, i686, or x86_64. This is the toolchain's target architecture."
     echo "  -s  | --source:      Possible values: gnu or linaro. This is the GCC source (GNU official vs. Linaro fork)."
-    echo "  -v  | --version:     Possible values: (4, 5, 6, 7, 8, and 9* [*GNU only]). This is the GCC version to build."
+    echo "  -v  | --version:     Possible values: (4, 5, 6, 7, 8, 9*, and 10* [*GNU only]). This is the GCC version to build."
     echo
     echo "${BOLD}OPTIONAL PARAMETERS:${RST}"
     echo "  -f  | --full-src:    Download full git repos instead of shallow clones"
+    echo "  -j  | --jobs:        Specify the amount of threads to use. This overrides the default automatic detection"
     echo "  -nt | --no-tmpfs:    Do not use tmpfs for building (useful if you don't have much RAM)."
     echo "  -nu | --no-update:   Do not update the downloaded components before building (useful if you have slow internet)."
     echo "  -p  | --package:     Possible values: gz or xz. Compresses toolchain after build."
     echo "  -t  | --tarballs:    Use tarballs for binutils, ISL, and, GCC"
     echo "  -V  | --verbose:     Make script print all output, not just errors and the ending information"
-    echo "  -j  | --jobs:        Specify the amount of threads to use. This overrides the default automatic detection"
     echo
 }
 
@@ -180,7 +180,7 @@ function setup_variables() {
     GMP="gmp-6.1.2"
     MPFR="mpfr-4.0.2"
     MPC="mpc-1.1.0"
-    ISL="isl-0.20"
+    ISL="isl-0.21"
     GLIBC="glibc-2.29"
     LINUX="5.0"
 
@@ -245,6 +245,7 @@ function parse_parameters() {
             "gnu:7") GCC=gcc-7-branch ;;
             "gnu:8") GCC=gcc-8-branch ;;
             "gnu:9") GCC=gcc-9-branch ;;
+            "gnu:10") GCC=master ;;
             "linaro:4") GCC=linaro-local/releases/linaro-4.9-2017.01
                         GLIBC="glibc-2.27"
                         ISL="isl-0.17.1" ;;
@@ -256,6 +257,7 @@ function parse_parameters() {
             # ARM has taken the responsibility from Linaro since 8.x
             "linaro:8") GCC=linaro-local/ARM/arm-8-branch ;;
             "linaro:9") die "There's no such thing as Linaro 9.x Clannad..." -h ;;
+            "linaro:10") die "There's no such thing as Linaro 10.x Clannad..." -h ;;
             *) die "Absent or invalid GCC version or source specified!" -h ;;
         esac
     else
@@ -272,7 +274,8 @@ function parse_parameters() {
             "gnu:6") GCC=gcc-6.5.0 ;;
             "gnu:7") GCC=gcc-7.4.0 ;;
             "gnu:8") GCC=gcc-8.3.0 ;;
-            "gnu:9") die "GCC 9.0 is currently a WIP so there is no tarball to download! Either use the git repo or choose a new version..." ;;
+            "gnu:9") GCC=gcc-9.1.0 ;;
+            "gnu:10") die "GCC 10.0 is currently a WIP so there is no tarball to download! Either use the git repo or choose a new version..." ;;
             "linaro:4") GCC=linaro-4.9-2017.01
                         GLIBC="glibc-2.27"
                         ISL="isl-0.17.1" ;;
@@ -283,8 +286,9 @@ function parse_parameters() {
             "linaro:7") GCC=linaro-snapshot-7.4-2019.01 ;;
             # ARM has taken the responsibility from Linaro since 8.x
             # See later in this script why it's defined like this
-            "linaro:8") GCC=8.2-2019.01 ;;
+            "linaro:8") GCC=8.3-2019.03 ;;
             "linaro:9") die "There's no such thing as Linaro 9.x Clannad..." -h ;;
+            "linaro:10") die "There's no such thing as Linaro 10.x Clannad..." -h ;;
             *) die "Absent or invalid GCC version or source specified!" -h ;;
         esac
     fi
@@ -341,8 +345,8 @@ function build_binaries() {
             cd "${AXEL}" || die "Issue with cloning axel source!"
             ./autogen.sh
             ./configure --prefix="$(dirname "${PREBUILTS_BIN}")"
-            make ${JOBS} || die "Error building axel!"
-            make ${JOBS} install || die "Error installing axel!"
+            make "${JOBS}" || die "Error building axel!"
+            make "${JOBS}" install || die "Error installing axel!"
         )
     fi
 
@@ -351,7 +355,7 @@ function build_binaries() {
         [[ ! -d ${PIGZ} ]] && git -C "$(dirname "${PIGZ}")" clone --depth=1 https://github.com/madler/pigz
         git -C "${PIGZ}" clean -fxdq
         git -C "${PIGZ}" pull
-        make -C "${PIGZ}" ${JOBS} pigz || die "Error building pigz!"
+        make -C "${PIGZ}" "${JOBS}" pigz || die "Error building pigz!"
         mv "${PIGZ}"/pigz "${PREBUILTS_BIN}"
     fi
 
@@ -360,7 +364,7 @@ function build_binaries() {
         [[ ! -d ${PXZ} ]] && git -C "$(dirname "${PXZ}")" clone --depth=1 https://github.com/jnovy/pxz
         git -C "${PXZ}" clean -fxdq
         git -C "${PXZ}" pull
-        make -C "${PXZ}" ${JOBS} pxz || die "Error building pxz!"
+        make -C "${PXZ}" "${JOBS}" pxz || die "Error building pxz!"
         mv "${PXZ}"/pxz "${PREBUILTS_BIN}"
     fi
 }
@@ -431,7 +435,7 @@ function download_sources() {
         elif [[ ${VERSION} -ge 8 ]]; then
             if [[ ! -f gcc-arm-src-snapshot-${GCC}.tar.xz ]]; then
                 header "DOWNLOADING GCC"
-                axel https://developer.arm.com/-/media/Files/downloads/gnu-a/${GCC}/gcc-arm-src-snapshot-${GCC}.tar.xz
+                axel https://developer.arm.com/-/media/Files/downloads/gnu-a/${GCC}/srcrel/gcc-arm-src-snapshot-${GCC}.tar.xz
             fi
             GCC_TAR=gcc-arm-src-snapshot-${GCC}.tar.xz
         # Linaro, 7.x and older
@@ -573,8 +577,8 @@ function build_binutils() {
                           --target=${TARGET} \
                           --prefix="${INSTALL}" \
                           --disable-gdb
-    make ${JOBS} || die "Error while building binutils!" -n
-    make install ${JOBS} || die "Error while installing binutils!" -n
+    make "${JOBS}" || die "Error while building binutils!" -n
+    make install "${JOBS}" || die "Error while installing binutils!" -n
 }
 
 
@@ -584,7 +588,7 @@ function build_headers() {
     cd ../linux || die "Linux kernel folder does not exist!"
     make ARCH="${KERNEL_ARCH}" \
         INSTALL_HDR_PATH="${INSTALL}/${TARGET}" \
-        headers_install ${JOBS} || die "Error while building/installing Linux headers!" -n
+        headers_install "${JOBS}" || die "Error while building/installing Linux headers!" -n
 }
 
 
@@ -596,11 +600,11 @@ function build_gcc() {
                      --enable-languages=c,c++ \
                      --target=${TARGET} \
                      --prefix="${INSTALL}"
-    make all-gcc ${JOBS} || die "Error while building gcc!" -n
-    make install-gcc ${JOBS} || die "Error while installing gcc!" -n
+    make all-gcc "${JOBS}" || die "Error while building gcc!" -n
+    make install-gcc "${JOBS}" || die "Error while installing gcc!" -n
     if [[ ${ARCH} = "x86_64" ]]; then
-        make all-target-libgcc ${JOBS} || die "Error while installing libgcc for host!" -n
-        make install-target-libgcc ${JOBS} || die "Error while installing libgcc for target!" -n
+        make all-target-libgcc "${JOBS}" || die "Error while installing libgcc for host!" -n
+        make install-target-libgcc "${JOBS}" || die "Error while installing libgcc for target!" -n
     fi
 }
 
@@ -615,22 +619,22 @@ function build_glibc() {
                           --target=${TARGET} \
                           --with-headers="${INSTALL}/${TARGET}/include" \
                           "${CONFIGURATION[@]}" libc_cv_forced_unwind=yes
-    make install-bootstrap-headers=yes install-headers ${JOBS} || die "Error installing headers for glibc!" -n
-    make csu/subdir_lib ${JOBS} || die "Error while making subdir_lib for glibc!" -n
+    make install-bootstrap-headers=yes install-headers "${JOBS}" || die "Error installing headers for glibc!" -n
+    make csu/subdir_lib "${JOBS}" || die "Error while making subdir_lib for glibc!" -n
     install csu/crt1.o csu/crti.o csu/crtn.o "${INSTALL}/${TARGET}/lib"
     ${TARGET}-gcc -nostdlib -nostartfiles -shared -x c /dev/null -o "${INSTALL}/${TARGET}/lib/libc.so"
     touch "${INSTALL}/${TARGET}/include/gnu/stubs.h"
     if [[ ${ARCH} = "x86_64" ]]; then
-        make ${JOBS} || die "Error while building glibc for the host!" -n
-        make install ${JOBS} || die "Error while installing glibc for the host!" -n
+        make "${JOBS}" || die "Error while building glibc for the host!" -n
+        make install "${JOBS}" || die "Error while installing glibc for the host!" -n
     else
         cd ../build-gcc || die "GCC build folder does not exist!"
-        make all-target-libgcc ${JOBS} || die "Error while building libgcc for target!" -n
-        make install-target-libgcc ${JOBS} || die "Error while installing libgcc for target!" -n
+        make all-target-libgcc "${JOBS}" || die "Error while building libgcc for target!" -n
+        make install-target-libgcc "${JOBS}" || die "Error while installing libgcc for target!" -n
 
         cd ../build-glibc || die "glibc build folder does not exist!"
-        make ${JOBS} || die "Error while building glibc for target" -n
-        make install ${JOBS} || die "Error while installing glibc for target" -n
+        make "${JOBS}" || die "Error while building glibc for target" -n
+        make install "${JOBS}" || die "Error while installing glibc for target" -n
     fi
 }
 
@@ -639,8 +643,8 @@ function build_glibc() {
 function install_gcc() {
     header "INSTALLING GCC"
     cd ../build-gcc || die "GCC build folder does not exist!"
-    make all ${JOBS} || die "Error while compiling final toolchain!" -n
-    make install ${JOBS} || die "Error while installing final toolchain!" -n
+    make all "${JOBS}" || die "Error while compiling final toolchain!" -n
+    make install "${JOBS}" || die "Error while installing final toolchain!" -n
     cd ..
 }
 
