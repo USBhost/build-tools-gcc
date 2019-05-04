@@ -180,7 +180,7 @@ function setup_variables() {
     GMP="gmp-6.1.2"
     MPFR="mpfr-4.0.2"
     MPC="mpc-1.1.0"
-    ISL="isl-0.20"
+    ISL="isl-0.21"
     GLIBC="glibc-2.29"
     LINUX="5.0"
 
@@ -272,7 +272,7 @@ function parse_parameters() {
             "gnu:6") GCC=gcc-6.5.0 ;;
             "gnu:7") GCC=gcc-7.4.0 ;;
             "gnu:8") GCC=gcc-8.3.0 ;;
-            "gnu:9") die "GCC 9.0 is currently a WIP so there is no tarball to download! Either use the git repo or choose a new version..." ;;
+            "gnu:9") GCC=gcc-9.1.0 ;;
             "linaro:4") GCC=linaro-4.9-2017.01
                         GLIBC="glibc-2.27"
                         ISL="isl-0.17.1" ;;
@@ -283,7 +283,7 @@ function parse_parameters() {
             "linaro:7") GCC=linaro-snapshot-7.4-2019.01 ;;
             # ARM has taken the responsibility from Linaro since 8.x
             # See later in this script why it's defined like this
-            "linaro:8") GCC=8.2-2019.01 ;;
+            "linaro:8") GCC=8.3-2019.03 ;;
             "linaro:9") die "There's no such thing as Linaro 9.x Clannad..." -h ;;
             *) die "Absent or invalid GCC version or source specified!" -h ;;
         esac
@@ -431,7 +431,7 @@ function download_sources() {
         elif [[ ${VERSION} -ge 8 ]]; then
             if [[ ! -f gcc-arm-src-snapshot-${GCC}.tar.xz ]]; then
                 header "DOWNLOADING GCC"
-                axel https://developer.arm.com/-/media/Files/downloads/gnu-a/${GCC}/gcc-arm-src-snapshot-${GCC}.tar.xz
+                axel https://developer.arm.com/-/media/Files/downloads/gnu-a/${GCC}/srcrel/gcc-arm-src-snapshot-${GCC}.tar.xz
             fi
             GCC_TAR=gcc-arm-src-snapshot-${GCC}.tar.xz
         # Linaro, 7.x and older
