@@ -221,7 +221,7 @@ function parse_parameters() {
     # Default values
     case "${ARCH}" in
         "arm") TARGET="arm-linux-gnueabi" ;;
-        "arm64") TARGET="aarch64-linux-gnu" ;;
+        "arm64") TARGET="aarch64-linux-android" ;;
         "i686") TARGET="i686-linux-gnu" ;;
         "x86_64") [[ ${VERSION} -le 5 ]] && die "Will not build, Use newer version instead" -n
                   TARGET="x86_64-linux-gnu" ;;
@@ -595,7 +595,10 @@ function build_gcc() {
     ../gcc/configure "${CONFIGURATION[@]}" \
                      --enable-languages=c,c++ \
                      --target=${TARGET} \
-                     --prefix="${INSTALL}"
+                     --prefix="${INSTALL} \
+		     --disable-shared --disable-multilib --disable-werror CFLAGS='-g0 -O3' CXXFLAGS='-g0 -O3 \
+		     --enable-static --with-host-libstdcxx='-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm' \
+		     --with-pkgversion='urK -kernelaesthesia- Build' --enable-plugin"
     make all-gcc ${JOBS} || die "Error while building gcc!" -n
     make install-gcc ${JOBS} || die "Error while installing gcc!" -n
     if [[ ${ARCH} = "x86_64" ]]; then
@@ -696,16 +699,16 @@ setup_variables
 parse_parameters "${@}"
 trap 'unmount_tmpfs; die "Manually aborted!" -n' SIGINT SIGTERM
 trap 'unmount_tmpfs' EXIT
-clean_up
+# clean_up
 build_binaries
-download_sources
-extract_sources
+# download_sources
+# extract_sources
 update_repos
 setup_env
-build_binutils
-build_headers
+# build_binutils
+# build_headers
 build_gcc
-build_glibc
-install_gcc
+# build_glibc
+# install_gcc
 package_tc
 ending_info
