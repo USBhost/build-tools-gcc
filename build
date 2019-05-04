@@ -53,12 +53,12 @@ function help_menu() {
     echo
     echo "${BOLD}OPTIONAL PARAMETERS:${RST}"
     echo "  -f  | --full-src:    Download full git repos instead of shallow clones"
+    echo "  -j  | --jobs:        Specify the amount of threads to use. This overrides the default automatic detection"
     echo "  -nt | --no-tmpfs:    Do not use tmpfs for building (useful if you don't have much RAM)."
     echo "  -nu | --no-update:   Do not update the downloaded components before building (useful if you have slow internet)."
     echo "  -p  | --package:     Possible values: gz or xz. Compresses toolchain after build."
     echo "  -t  | --tarballs:    Use tarballs for binutils, ISL, and, GCC"
     echo "  -V  | --verbose:     Make script print all output, not just errors and the ending information"
-    echo "  -j  | --jobs:        Specify the amount of threads to use. This overrides the default automatic detection"
     echo
 }
 
