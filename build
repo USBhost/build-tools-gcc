@@ -361,7 +361,7 @@ function build_binaries() {
 
     if [[ ! -f ${PREBUILTS_BIN}/pxz ]]; then
         PXZ=${ROOT}/sources/pxz
-        [[ ! -d ${PXZ} ]] && git -C "$(dirname "${PXZ}")" clone --depth=1 https://github.com/jnovy/pxz
+        [[ ! -d ${PXZ} ]] && git -C "$(dirname "${PXZ}")" clone --depth=1 https://github.com/krasCGQ/pxz
         git -C "${PXZ}" clean -fxdq
         git -C "${PXZ}" pull
         make -C "${PXZ}" "${JOBS}" pxz || die "Error building pxz!"
