@@ -300,7 +300,7 @@ function clean_up() { #FIXME: we dont need to remove everything everytime.
     header "CLEANING UP"
 
     unmount_tmpfs
-    git clean -fxdq -e sources -e prebuilts
+    git clean -fxdq -e sources -e prebuilts -e patches
     find . -maxdepth 1 -type l -exec rm -rf {} \; #FIXME
     if [[ -d binutils ]] ||
        [[ -d build-binutils ]] ||
@@ -526,6 +526,30 @@ function update_repos() {
 }
 
 
+# Fetch required GCC patches
+function fetch_patches() {
+    mkdir -p patches
+    cd patches || die "Failed to create patches directory!"
+
+    if [[ ${VERSION} -eq 4 ]]; then
+        # GCC 4.9 (ARM/i686): error: ‘SIGSEGV' was not declared in this scope
+        GCC_PATCH="942-asan-fix-missing-include-signal-h"
+        [[ ! -f ${GCC_PATCH}.patch ]] && curl -sLO https://raw.githubusercontent.com/buildroot/buildroot/master/package/gcc/4.9.4/${GCC_PATCH}.patch
+    elif [[ ${VERSION} -ge 6 ]]; then
+        if [[ ${VERSION} -le 8 ]]; then
+            # GCC 6-8 (i686): error: ‘PATH_MAX' undeclared here (not in a function)
+            GCC_PATCH="53faaf1da220f5e904a1e8c8b343e91121218f82"
+        else
+            # GNU GCC 9 (any): error: ‘PATH_MAX' was not declared on this scope
+            GCC_PATCH="55a6998c4d5ce0ccd20bb0572915c2c94c0dc138"
+        fi
+        [[ ! -f ${GCC_PATCH}.patch ]] && curl -sLO https://gist.githubusercontent.com/krasCGQ/9e859c91e2e7c1fe0ffe009f4edd1d22/raw/114f29c50c15db2bc4ca9c2de348ad0fb3055ad1/${GCC_PATCH}.patch
+    fi
+
+    cd ..
+}
+
+
 # Setup source folders and build folders
 function setup_env() {
     INSTALL=${ROOT}/${TARGET}
@@ -553,12 +577,9 @@ function setup_env() {
         ln -s -f "${ROOT}/isl" isl
     fi
 
-    # GCC 4.9 (ARM/i686): error: ‘SIGSEGV' was not declared in this scope
-    [[ ${VERSION} -eq 4 ]] && curl -s https://raw.githubusercontent.com/buildroot/buildroot/master/package/gcc/4.9.4/942-asan-fix-missing-include-signal-h.patch | patch -Np1
-    # GNU GCC 6-8 (i686): error: ‘PATH_MAX' undeclared here (not in a function)
-    [[ ${VERSION} -ge 6 && ${VERSION} -le 8 ]] && curl -s https://gist.githubusercontent.com/krasCGQ/9e859c91e2e7c1fe0ffe009f4edd1d22/raw/114f29c50c15db2bc4ca9c2de348ad0fb3055ad1/53faaf1da220f5e904a1e8c8b343e91121218f82.patch | patch -Np1
-    # GNU GCC 9 (any): error: ‘PATH_MAX' was not declared on this scope
-    [[ ${SOURCE} = "gnu" && ${VERSION} -eq 9 ]] && curl -s https://gist.githubusercontent.com/krasCGQ/9e859c91e2e7c1fe0ffe009f4edd1d22/raw/114f29c50c15db2bc4ca9c2de348ad0fb3055ad1/55a6998c4d5ce0ccd20bb0572915c2c94c0dc138.patch | patch -Np1
+    if [[ -n ${GCC_PATCH} ]]; then
+        patch -Np1 < "${ROOT}"/patches/${GCC_PATCH}.patch || die "Failed to patch GCC source!"
+    fi
     cd ..
 
     if [[ -z ${VERBOSE} ]]; then
@@ -705,6 +726,7 @@ build_binaries
 download_sources
 extract_sources
 update_repos
+fetch_patches
 setup_env
 build_binutils
 build_headers
