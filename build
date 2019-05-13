@@ -53,7 +53,7 @@ function help_menu() {
     echo
     echo "${BOLD}OPTIONAL PARAMETERS:${RST}"
     echo "  -f  | --full-src:    Download full git repos instead of shallow clones"
-    echo "  -j  | --jobs:        Specify the amount of threads to use. This overrides the default automatic detection"
+    echo "  -j  | --jobs:        Specify the amount of threads to use. This overrides the default detection"
     echo "  -nt | --no-tmpfs:    Do not use tmpfs for building (useful if you don't have much RAM)."
     echo "  -nu | --no-update:   Do not update the downloaded components before building (useful if you have slow internet)."
     echo "  -p  | --package:     Possible values: gz or xz. Compresses toolchain after build."
@@ -173,6 +173,7 @@ function setup_variables() {
     # Configuration variables
     CONFIGURATION=( "--disable-multilib" "--disable-werror" )
     JOBS="-j$(($(nproc --all) + 1))"
+    DEPTH_FLAG=true
 
     # Binary versions
     BINUTILS_git="binutils-2_32-branch"
@@ -199,13 +200,13 @@ function parse_parameters() {
             "-v"|"--version") shift && VERSION=${1} ;;
 
             # OPTIONAL FLAGS
-            "-f"|"--full-src") FULL_SOURCE=true ;;
+            "-f"|"--full-src") DEPTH_FLAG=false ;;
+            "-j"|"--jobs") shift && JOBS=-j${1} ;;
             "-nt"|"--no-tmpfs") NO_TMPFS=true ;;
             "-nu"|"--no-update") NO_UPDATE=true ;;
             "-p"|"--package") shift && COMPRESSION=${1} ;;
             "-t"|"--tarballs") TARBALLS=true ;;
             "-V"|"--verbose") VERBOSE=true ;;
-            "-j"|"--jobs") shift && JOBS=-j${1} ;;
 
             # HELP!
             "-h"|"--help") help_menu; exit ;;
@@ -216,7 +217,6 @@ function parse_parameters() {
 
     [[ -z ${NO_TMPFS} ]] && check_sudo
     [[ -z ${VERBOSE} ]] && exec 6>&2 5>&1 &>/dev/null
-    [[ -z ${FULL_SOURCE} ]] && DEPTH_FLAG=true
 
     # Default values
     case "${ARCH}" in
@@ -406,7 +406,8 @@ function download_sources() {
 
         if [[ ! -d isl ]]; then
             header "DOWNLOADING ISL"
-            git_clone git://repo.or.cz/isl.git -b ${ISL}
+            # don't use git_clone
+            git clone git://repo.or.cz/isl.git
         fi
 
         if [[ ! -d gcc ]]; then
@@ -491,24 +492,20 @@ function update_repos() {
         (
             cd isl || die "ISL did not get cloned properly!"
             git remote update
-            git checkout ${ISL}
-            git reset --hard HEAD
+            git checkout -f ${ISL}
             ./autogen.sh
         )
         (
             cd binutils || die "binutils did not get cloned properly!"
             [[ -n ${FULL_SOURCE} ]] && BRANCH=origin/${BINUTILS_git} || BRANCH=FETCH_HEAD
             git_fetch origin ${BINUTILS_git}
-            git checkout ${BINUTILS_git} || git checkout -b ${BINUTILS_git} ${BRANCH}
-            git reset --hard ${BRANCH}
+            git checkout -f ${BINUTILS_git} || git checkout -f -b ${BINUTILS_git} ${BRANCH}
         )
         (
             cd gcc || die "GCC did not get cloned properly!"
             [[ -n ${FULL_SOURCE} ]] && BRANCH=origin/${GCC} || BRANCH=FETCH_HEAD
             git_fetch origin ${GCC}
-            git reset --hard
-            git checkout ${GCC} || git checkout -b ${GCC} ${BRANCH}
-            git reset --hard ${BRANCH}
+            git checkout -f ${GCC} || git checkout -f -b ${GCC} ${BRANCH}
         )
     else
         if [[ -d isl ]]; then
