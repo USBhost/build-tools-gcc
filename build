@@ -182,7 +182,7 @@ function setup_variables() {
     MPFR="mpfr-4.0.2"
     MPC="mpc-1.1.0"
     ISL="isl-0.21"
-    GLIBC="glibc-2.29"
+    GLIBC="glibc-2.30"
     LINUX="5.2"
 
     # Start of script
