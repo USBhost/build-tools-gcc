@@ -1,0 +1,16 @@
+diff --git a/libsanitizer/asan/asan_linux.cc b/libsanitizer/asan/asan_linux.cc
+index d92d0596b7..84afa88776 100644
+--- a/libsanitizer/asan/asan_linux.cc
++++ b/libsanitizer/asan/asan_linux.cc
+@@ -63,6 +63,11 @@ extern Elf_Dyn _DYNAMIC;
+ #define ucontext_t xucontext_t
+ #endif
+ 
++// HACK
++#ifndef PATH_MAX
++#define PATH_MAX 4096 // from include/uapi/linux/limits.h
++#endif
++
+ typedef enum {
+   ASAN_RT_VERSION_UNDEFINED = 0,
+   ASAN_RT_VERSION_DYNAMIC,

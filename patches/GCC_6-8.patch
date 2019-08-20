@@ -1,0 +1,16 @@
+diff --git a/libmpx/mpxrt/mpxrt-utils.c b/libmpx/mpxrt/mpxrt-utils.c
+index 057a3553cb..381559322c 100644
+--- a/libmpx/mpxrt/mpxrt-utils.c
++++ b/libmpx/mpxrt/mpxrt-utils.c
+@@ -66,6 +66,11 @@
+ #define MPX_RT_BNDPRESERVE_DEFAULT 0
+ #define MPX_RT_PRINT_SUMMARY "CHKP_RT_PRINT_SUMMARY"
+ 
++/* HACK */
++#ifndef PATH_MAX
++#define PATH_MAX 4096 /* from include/uapi/linux/limits.h */
++#endif
++
+ #define MAX_FILE_NAME PATH_MAX
+ 
+ typedef struct env_var_s {
