@@ -343,7 +343,7 @@ function build_binaries() {
         git -C "${AXEL}" pull
         (
             cd "${AXEL}" || die "Issue with cloning axel source!"
-            ./autogen.sh
+            autoreconf -fiv
             ./configure --prefix="$(dirname "${PREBUILTS_BIN}")"
             make "${JOBS}" || die "Error building axel!"
             make "${JOBS}" install || die "Error installing axel!"
