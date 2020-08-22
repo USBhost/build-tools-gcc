@@ -179,7 +179,7 @@ function setup_variables() {
     BINUTILS_git="binutils-2_34-branch"
     BINUTILS_tar="2.34"
     GMP="gmp-6.2.0"
-    MPFR="mpfr-4.0.2"
+    MPFR="mpfr-4.1.0"
     MPC="mpc-1.1.0"
     ISL="isl-0.22.1"
     GLIBC="glibc-2.31"
