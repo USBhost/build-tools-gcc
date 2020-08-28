@@ -283,7 +283,7 @@ function parse_parameters() {
                         GLIBC="glibc-2.27"
                         ISL="isl-0.17.1" ;;
             "linaro:6") GCC=linaro-snapshot-6.5-2018.11 ;;
-            "linaro:7") GCC=linaro-snapshot-7.4-2019.01 ;;
+            "linaro:7") GCC=linaro-snapshot-7.5-2019.11 ;;
             # ARM has taken the responsibility from Linaro since 8.x
             # See later in this script why it's defined like this
             "linaro:8") GCC=8.3-2019.03 ;;
