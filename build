@@ -180,10 +180,10 @@ function setup_variables() {
     BINUTILS_tar="2.34"
     GMP="gmp-6.2.0"
     MPFR="mpfr-4.1.0"
-    MPC="mpc-1.1.0"
+    MPC="mpc-1.2.0"
     ISL="isl-0.22.1"
-    GLIBC="glibc-2.31"
-    LINUX="5.4.28"
+    GLIBC="glibc-2.32"
+    LINUX="5.4.61"
 
     # Start of script
     START=$(date +%s)
